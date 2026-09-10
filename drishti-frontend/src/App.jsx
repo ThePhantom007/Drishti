@@ -66,35 +66,50 @@ export default function App() {
 
   // Fetch Live Queue from FastAPI (doctor/admin only -- matches the
   // backend's own role check on GET /api/queue)
-  useEffect(() => {
-    const fetchQueue = async () => {
-      try {
-        // Both requests: the pending review queue AND recently-reviewed
-        // cases. /api/queue only ever returns pending screenings by
-        // design (it's a review queue), so a case that just got
-        // confirmed/overridden would previously vanish entirely the
-        // moment this effect re-ran (e.g. navigating back here after
-        // reviewing one) -- there was no second source to still show it
-        // as reviewed, which is what broke the "Reviewed & Signed" tab
-        // and the signed-today count. Fetching both and merging means a
-        // reviewed case has a real place to live instead of just an
-        // optimistic local update that the next fetch would overwrite.
-        const [pendingRes, reviewedRes] = await Promise.all([
-          authFetch('/api/queue?limit=100'),
-          authFetch('/api/queue?status=reviewed&limit=100'),
-        ]);
-        const pending = pendingRes.ok ? await pendingRes.json() : [];
-        const reviewed = reviewedRes.ok ? await reviewedRes.json() : [];
-        setCases([...pending, ...reviewed]);
-      } catch (error) {
-        console.error('Failed to fetch review queue:', error);
-      }
-    };
+  const [isQueueRefreshing, setIsQueueRefreshing] = useState(false);
 
-    if ((currentRole === 'doctor' || currentRole === 'admin') && currentView === 'queue') {
-      fetchQueue();
+  const fetchQueue = React.useCallback(async () => {
+    setIsQueueRefreshing(true);
+    try {
+      // Both requests: the pending review queue AND recently-reviewed
+      // cases. /api/queue only ever returns pending screenings by
+      // design (it's a review queue), so a case that just got
+      // confirmed/overridden would previously vanish entirely the
+      // moment this effect re-ran (e.g. navigating back here after
+      // reviewing one) -- there was no second source to still show it
+      // as reviewed, which is what broke the "Reviewed & Signed" tab
+      // and the signed-today count. Fetching both and merging means a
+      // reviewed case has a real place to live instead of just an
+      // optimistic local update that the next fetch would overwrite.
+      const [pendingRes, reviewedRes] = await Promise.all([
+        authFetch('/api/queue?limit=100'),
+        authFetch('/api/queue?status=reviewed&limit=100'),
+      ]);
+      const pending = pendingRes.ok ? await pendingRes.json() : [];
+      const reviewed = reviewedRes.ok ? await reviewedRes.json() : [];
+      setCases([...pending, ...reviewed]);
+    } catch (error) {
+      console.error('Failed to fetch review queue:', error);
+    } finally {
+      setIsQueueRefreshing(false);
     }
-  }, [currentRole, currentView]);
+  }, []);
+
+  useEffect(() => {
+    if (!((currentRole === 'doctor' || currentRole === 'admin') && currentView === 'queue')) {
+      return;
+    }
+    fetchQueue();
+
+    // A screening submitted from a different logged-in session (an ASHA
+    // worker's own browser/device, most realistically) has no way to push
+    // an update into a doctor's already-open queue tab -- there's no
+    // websocket here. Polling every 45s means a doctor sitting on this
+    // page actually sees new arrivals without needing to navigate away
+    // and back to force a refetch.
+    const intervalId = setInterval(fetchQueue, 45000);
+    return () => clearInterval(intervalId);
+  }, [currentRole, currentView, fetchQueue]);
 
   // Guard against a stale/deep-linked view that this role isn't allowed
   // to see (e.g. an ASHA account somehow lands on 'dashboard') -- redirect
@@ -235,7 +250,7 @@ export default function App() {
 
         <main className="main-content">
           {currentView === 'queue' && (
-            <ReviewQueue cases={cases} onSelectCase={navigateToCase} searchQuery={searchQuery} />
+            <ReviewQueue cases={cases} onSelectCase={navigateToCase} searchQuery={searchQuery} onRefresh={fetchQueue} isRefreshing={isQueueRefreshing} />
           )}
 
           {currentView === 'detail' && (
@@ -247,7 +262,7 @@ export default function App() {
                 selectedLanguage={selectedLanguage}
               />
             ) : (
-              <ReviewQueue cases={cases} onSelectCase={navigateToCase} searchQuery={searchQuery} />
+              <ReviewQueue cases={cases} onSelectCase={navigateToCase} searchQuery={searchQuery} onRefresh={fetchQueue} isRefreshing={isQueueRefreshing} />
             )
           )}
 
@@ -267,7 +282,7 @@ export default function App() {
         </main>
       </div>
 
-      <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} onCaseAdded={handleAddNewCase} />
+      <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} onCaseAdded={handleAddNewCase} currentUser={currentUser} selectedLanguage={selectedLanguage} />
       <NotificationDrawer 
         isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} notifications={notifications}
         onMarkAsRead={handleMarkNotificationAsRead} onMarkAllAsRead={handleMarkAllNotificationsAsRead} onSelectNotificationCase={handleNotificationSelectCase}
