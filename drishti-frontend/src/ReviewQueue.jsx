@@ -17,10 +17,11 @@ import {
   Flame,
   Zap,
   Target,
-  Check
+  Check,
+  RefreshCw
 } from 'lucide-react';
 
-export default function ReviewQueue({ cases = [], onSelectCase, onQuickConfirm, searchQuery }) {
+export default function ReviewQueue({ cases = [], onSelectCase, onQuickConfirm, searchQuery, onRefresh, isRefreshing = false }) {
   const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'urgent', 'reviewed', 'all'
   const [severityFilter, setSeverityFilter] = useState('all');
   const [phcFilter, setPhcFilter] = useState('all');
@@ -172,6 +173,19 @@ export default function ReviewQueue({ cases = [], onSelectCase, onQuickConfirm, 
             <span>Severe NPDR/PDR awaiting specialist scrutiny</span>
           </div>
         </div>
+
+        {onRefresh && (
+          <button
+            type="button"
+            className="btn-ghost btn-sm flex-center-gap"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            title="New screenings from other logged-in ASHA/doctor sessions don't push into this view automatically -- refresh to pull the latest"
+          >
+            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        )}
       </div>
 
       {/* Top Clinical KPI Bar */}

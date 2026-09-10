@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { UploadCloud, X, Sparkles, CheckCircle, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react';
-import { apiScreenFundus } from './api';
+import { UploadCloud, X, Sparkles, CheckCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { authFetch, withAuthToken, API_BASE_URL } from './api';
 
-export default function UploadModal({ isOpen, onClose, onCaseAdded }) {
+export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser, selectedLanguage = 'en' }) {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [patientId, setPatientId] = useState(`9f1c2a${Math.floor(10 + Math.random() * 89)}`);
+  const [externalId, setExternalId] = useState(`ASHA-REG-${Math.floor(10000 + Math.random() * 89999)}`);
   const [patientName, setPatientName] = useState('Rajesh Verma');
   const [patientEye, setPatientEye] = useState('OD'); // OD: Right, OS: Left
   const [patientAge, setPatientAge] = useState('54');
@@ -13,149 +13,104 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded }) {
   const [phcCenter, setPhcCenter] = useState('PHC Wardha Rural');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [error, setError] = useState(null);
 
   if (!isOpen) return null;
-
-  const sampleImages = [
-    {
-      name: 'Sample 1: Severe NPDR',
-      url: 'https://images.unsplash.com/photo-1578496479531-32e296d5c6e1?auto=format&fit=crop&q=80&w=800&h=500',
-      grade: { icdr_level: 3, icdr_label: 'Severe NPDR', confidence: 0.94, referable: true, requires_human_review: true }
-    },
-    {
-      name: 'Sample 2: Moderate NPDR',
-      url: 'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80&w=800&h=500',
-      grade: { icdr_level: 2, icdr_label: 'Moderate NPDR', confidence: 0.89, referable: true, requires_human_review: true }
-    },
-    {
-      name: 'Sample 3: Normal / No DR',
-      url: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&q=80&w=800&h=500',
-      grade: { icdr_level: 0, icdr_label: 'No DR', confidence: 0.97, referable: false, requires_human_review: false }
-    }
-  ];
-
-  const handleSelectSample = (sample) => {
-    setSelectedFile(sample);
-    setPreviewUrl(sample.url);
-  };
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
+      setError(null);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!previewUrl) return;
+    if (!(selectedFile instanceof File)) return;
 
+    setError(null);
     setIsAnalyzing(true);
 
-    let apiResult = null;
-    if (selectedFile instanceof File) {
+    try {
+      // 1. Register the patient for real -- the gateway rejects /api/screen
+      // for any patient_id it hasn't seen, so a fabricated local ID (what
+      // this modal used to send) always 404s. That failure used to be
+      // swallowed silently and replaced with fully fake stock-photo
+      // results; now it surfaces as a real, visible error instead.
+      const patientResponse = await authFetch('/api/patients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: patientName,
+          external_id: externalId,
+          age: patientAge ? Number(patientAge) : null,
+          sex: patientGender === 'Male' ? 'M' : patientGender === 'Female' ? 'F' : 'O',
+          preferred_language: selectedLanguage,
+          district: phcCenter.replace('PHC ', '').replace(' Rural', '').replace(' Center', '').replace(' Tele-Clinic', ''),
+          facility_id: phcCenter,
+          registered_by: currentUser?.username || 'unknown',
+        }),
+      });
+
+      if (!patientResponse.ok) {
+        throw new Error(`Patient registration failed (HTTP ${patientResponse.status})`);
+      }
+      const patient = await patientResponse.json();
+
+      // 2. Run the actual screening against the newly registered patient.
       const formData = new FormData();
       formData.append('image', selectedFile);
-      formData.append('patient_id', patientId);
-      formData.append('patient_name', patientName);
+      formData.append('patient_id', patient.id);
       formData.append('eye', patientEye);
-      formData.append('age', patientAge);
-      formData.append('gender', patientGender);
-      formData.append('phc', phcCenter);
-      apiResult = await apiScreenFundus(formData);
-    }
+      formData.append('language', selectedLanguage);
 
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      const chosenGrade = apiResult?.grading || selectedFile?.grade || {
-        icdr_level: 3,
-        icdr_label: 'Severe NPDR',
-        confidence: 0.88,
-        referable: true,
-        requires_human_review: true
-      };
+      const screenResponse = await authFetch('/api/screen', {
+        method: 'POST',
+        body: formData,
+      });
 
-      const nowId = `${Date.now()}`;
-      const newCase = {
-        id: nowId,
-        screening_id: `scr_${nowId}`,
-        patient_id: patientId,
-        patientId: patientId,
-        patient_name: patientName,
-        patientName: patientName,
-        external_id: `ASHA-REG-${Math.floor(10000 + Math.random() * 89999)}`,
-        age: Number(patientAge),
-        gender: patientGender,
-        sex: patientGender === 'Male' ? 'M' : 'F',
-        phc: phcCenter,
-        district: phcCenter.replace('PHC ', '').replace(' Rural', '').replace(' Center', '').replace(' Tele-Clinic', ''),
-        date: new Date().toISOString().split('T')[0],
-        eye: patientEye,
-        status: 'pending',
-        review_status: 'pending',
-        priority_score: chosenGrade.icdr_level >= 3 ? 38.5 : 19.0,
-        lesion_summary: '14 microaneurysms, 4 hemorrhages',
-        icdr_level: chosenGrade.icdr_level,
-        effective_icdr_level: chosenGrade.icdr_level,
-        icdr_label: chosenGrade.icdr_label,
-        confidence: chosenGrade.confidence,
-        calibrated_confidence: chosenGrade.confidence,
-        requires_human_review: chosenGrade.requires_human_review,
-        grading: {
-          ...chosenGrade
-        },
-        quality: {
-          adequate: true,
-          sharpness_score: 0.85,
-          illumination_score: 0.91,
-          field_of_view_score: 0.95,
-          issues: []
-        },
-        imageUrl: previewUrl,
-        explainability: {
-          original_image_url: previewUrl,
-          gradcam_image_url: 'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80&w=800&h=500',
-          annotated_image_url: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&q=80&w=800&h=500'
-        },
-        clinicalData: {
-          diabetesDuration: '8 years',
-          hba1c: '7.8%',
-          bloodPressure: '130/80 mmHg'
-        },
-        clinical_data: {
-          diabetes_duration: '8 years',
-          hba1c: '7.8%',
-          blood_pressure: '130/80 mmHg'
-        },
-        lesions: {
-          microaneurysms: 14,
-          microaneurysm_count: 14,
-          hemorrhages: 4,
-          hemorrhage_count: 4,
-          hardExudates: '0.8%',
-          hard_exudate_area_pct: 0.8,
-          neovascularization: 'None',
-          neovascularization_detected: false,
-          quadrants_with_hemorrhages: 2
-        },
-        grading_paths: {
-          rule_based_grade: chosenGrade.icdr_level,
-          rule_based_label: chosenGrade.icdr_label,
-          learned_grade: chosenGrade.icdr_level,
-          learned_label: chosenGrade.icdr_label,
-          disagreement: false
-        },
-        report: {
-          report_id: `rpt_${nowId}`,
-          summary_text: `${chosenGrade.icdr_label} detected (Level ${chosenGrade.icdr_level}). Specialist evaluation recommended.`,
-          language: 'hi'
-        }
-      };
+      if (!screenResponse.ok) {
+        const errData = await screenResponse.json().catch(() => ({}));
+        throw new Error(errData.detail || errData.message || `Screening failed (HTTP ${screenResponse.status})`);
+      }
+      const data = await screenResponse.json();
 
-      if (onCaseAdded) onCaseAdded(newCase);
+      // Build the case from the real API response -- real grading, real
+      // grading_paths (dual-path disagreement), real lesion counts, and
+      // real annotated/Grad-CAM image URLs (with the auth token attached,
+      // since these load via plain <img> tags downstream in CaseDetail).
+      if (onCaseAdded) {
+        onCaseAdded({
+          ...data,
+          patient_id: patient.id,
+          patient_name: patient.name,
+          external_id: patient.external_id,
+          age: patient.age,
+          sex: patient.sex,
+          district: patient.district,
+          phc: phcCenter,
+          eye: patientEye,
+          registered_by: patient.registered_by,
+          explainability: data.explainability ? {
+            ...data.explainability,
+            gradcam_image_url: data.explainability.gradcam_image_url
+              ? withAuthToken(`${API_BASE_URL}${data.explainability.gradcam_image_url}`)
+              : null,
+            annotated_image_url: data.explainability.annotated_image_url
+              ? withAuthToken(`${API_BASE_URL}${data.explainability.annotated_image_url}`)
+              : null,
+          } : undefined,
+        });
+      }
       onClose();
-    }, 1000);
+    } catch (err) {
+      console.error('Screening submission failed:', err);
+      setError(err.message || 'Something went wrong connecting to drishti-backend.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
@@ -188,11 +143,11 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded }) {
             </div>
 
             <div className="form-group">
-              <label>Patient MRN / ID</label>
+              <label>Patient MRN / Registration ID</label>
               <input 
                 type="text" 
-                value={patientId} 
-                onChange={(e) => setPatientId(e.target.value)} 
+                value={externalId} 
+                onChange={(e) => setExternalId(e.target.value)} 
                 required 
                 className="input-control"
               />
@@ -268,6 +223,7 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded }) {
                   const file = e.dataTransfer.files[0];
                   setSelectedFile(file);
                   setPreviewUrl(URL.createObjectURL(file));
+                  setError(null);
                 }
               }}
             >
@@ -282,7 +238,7 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded }) {
                 <div className="dropzone-empty">
                   <UploadCloud size={36} className="text-primary mb-2" />
                   <p className="dropzone-prompt">Drag & drop high-resolution fundus photograph here</p>
-                  <p className="dropzone-hint">Supports DICOM, JPEG, PNG (50° Field of view recommended)</p>
+                  <p className="dropzone-hint">Supports JPEG, PNG (50&deg; Field of view recommended)</p>
                   <label className="btn-secondary mt-2">
                     Browse File
                     <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
@@ -292,22 +248,11 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded }) {
             </div>
           </div>
 
-          {/* Quick Demo Sample Selector */}
-          <div className="samples-bar">
-            <span className="samples-title">Or test with clinical sample:</span>
-            <div className="sample-buttons">
-              {sampleImages.map((s, idx) => (
-                <button 
-                  key={idx}
-                  type="button" 
-                  className="btn-sample-chip"
-                  onClick={() => handleSelectSample(s)}
-                >
-                  <ImageIcon size={12} /> {s.name}
-                </button>
-              ))}
+          {error && (
+            <div className="login-error-banner">
+              <AlertTriangle size={14} /> <span>{error}</span>
             </div>
-          </div>
+          )}
 
           <div className="modal-footer">
             <button type="button" className="btn-ghost" onClick={onClose} disabled={isAnalyzing}>
@@ -317,7 +262,7 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded }) {
               {isAnalyzing ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  Running 6-Stage MATLAB Screening...
+                  Running Screening Pipeline...
                 </>
               ) : (
                 <>
