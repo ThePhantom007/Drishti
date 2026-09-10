@@ -197,7 +197,7 @@ npm run dev
 Set `VITE_API_BASE_URL` in `drishti-frontend/.env` if the backend isn't
 running on `http://localhost:8000`.
 
-**Live deployment:** `<PASTE_YOUR_LIVE_DEPLOYMENT_URL_HERE_ONCE_DEPLOYED>`
+**Live deployment:** https://drishti-frontend-c9mj.onrender.com/
 — see `docs/DEPLOYMENT.md` for the full free-tier deployment walkthrough
 (Neon + Render + UptimeRobot).
 
