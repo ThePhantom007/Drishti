@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand blue -->
+    <color name="drishti_blue_900">#0D47A1</color>
+    <color name="drishti_blue_800">#1565C0</color>
+    <color name="drishti_blue_700">#1976D2</color>
+    <color name="drishti_blue_500">#2196F3</color>
+    <color name="drishti_blue_400">#42A5F5</color>
+    <color name="drishti_blue_100">#E3F0FD</color>
+    <color name="drishti_blue_050">#F3F8FE</color>
+
+    <!-- Neutrals -->
+    <color name="white">#FFFFFF</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F5F8FC</color>
+    <color name="background">#FFFFFF</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="text_primary">#12202E</color>
+    <color name="text_secondary">#5C7080</color>
+    <color name="text_hint">#94A3B3</color>
+    <color name="divider">#E1E8F0</color>
+    <color name="scrim">#99000000</color>
+
+    <!-- Status / severity colors (used on chips + result badge) -->
+    <color name="status_no_dr">#2E7D32</color>
+    <color name="status_no_dr_bg">#E5F4E7</color>
+    <color name="status_mild">#F9A825</color>
+    <color name="status_mild_bg">#FEF6E0</color>
+    <color name="status_moderate">#EF6C00</color>
+    <color name="status_moderate_bg">#FDEBDD</color>
+    <color name="status_severe">#C62828</color>
+    <color name="status_severe_bg">#FBE2E2</color>
+    <color name="status_proliferative">#8E0000</color>
+    <color name="status_proliferative_bg">#F7DADA</color>
+    <color name="status_pending">#607D8B</color>
+    <color name="status_pending_bg">#EBEFF2</color>
+
+    <!-- Sync states -->
+    <color name="sync_queued">#F9A825</color>
+    <color name="sync_uploading">#1976D2</color>
+    <color name="sync_uploaded">#2E7D32</color>
+    <color name="sync_failed">#C62828</color>
+
+    <!-- Liquid glass -->
+    <color name="glass_panel">#D9FFFFFF</color>
+    <color name="glass_panel_soft">#B3FFFFFF</color>
+    <color name="glass_panel_strong">#F0FFFFFF</color>
+    <color name="glass_border">#59FFFFFF</color>
+    <color name="glass_border_strong">#8CFFFFFF</color>
+    <color name="glass_highlight">#66FFFFFF</color>
+    <color name="glass_toolbar">#B30D47A1</color>
+    <color name="glass_fab">#E61565C0</color>
+    <color name="glass_dark">#661A2733</color>
+    <color name="glass_dark_border">#40FFFFFF</color>
+
+    <!-- Glass chip fills (for MaterialComponents Chip, which needs a color, not a drawable) -->
+    <color name="chip_glass_no_dr">#332E7D32</color>
+    <color name="chip_glass_mild">#33F9A825</color>
+    <color name="chip_glass_moderate">#33EF6C00</color>
+    <color name="chip_glass_severe">#33C62828</color>
+    <color name="chip_glass_proliferative">#338E0000</color>
+    <color name="chip_glass_pending">#33607D8B</color>
+</resources>
