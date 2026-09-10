@@ -9,9 +9,7 @@ This repository is the working implementation for Smart India Hackathon
 - **PS ID:** SIH26038
 - **PS Title:** Explainable AI for Diabetic Retinopathy Screening in Rural India
 - **Category:** Software
-- **Theme:** Clean & Green Technology
-- **Team Name:** Veyronix
-- **Team Members:** _\<add names and roles here before submission\>_
+- **Theme:** MedTech / BioTech / HealthTech
 
 ## 2. Problem Statement
 
@@ -33,8 +31,8 @@ and low-confidence or referable cases are routed to an ophthalmologist for
 tele-review — so a single reviewer can safely oversee screening at a scale
 no manual-only process could sustain. Grading is **dual-path by design**:
 an interpretable rule-based ICDR ("4-2-1") estimate runs alongside the
-trained deep-learning ensemble, and a disagreement between the two is
-surfaced as a visible review signal rather than hidden.
+trained deep-learning ensemble, and a disagreement between the two is a 
+visible review signal.
 
 ## 4. Key Features
 
@@ -53,8 +51,7 @@ surfaced as a visible review signal rather than hidden.
 - Native-language voice read-out of results and PDF reports for
   ASHA-led rural patient communication
 - Validated against Messidor-2, a fully external benchmark never trained
-  or tuned on — see the in-app Benchmarks page for the actual numbers,
-  reported honestly including where the target metric isn't met
+  or tuned on — see the in-app Benchmarks page for the actual numbers
 
 ## 5. Technology Stack
 
@@ -144,8 +141,14 @@ See [submission/DEMO.md](submission/DEMO.md).
 
 ## 10. Screenshots / Prototype Photos
 
-See [assets/screenshots/README.md](assets/screenshots/README.md) — add
-real screenshots from the running app before final submission.
+![login.png](assets/screenshots/login.png)
+![screening-portal.png](assets/screenshots/screening-portal.png)
+![case-detail.png](assets/screenshots/case-detail.png)
+![review-queue.png](assets/screenshots/review-queue.png)
+![patient-history.png](assets/screenshots/patient-history.png)
+![admin-dashboard.png](assets/screenshots/admin-dashboard.png)
+![capacity-planner.png](assets/screenshots/capacity-planner.png)
+![benchmarks.png](assets/screenshots/benchmarks.png)
 
 ## 11. Installation
 
