@@ -30,7 +30,6 @@ services:
   - type: web
     runtime: static
     name: drishti-frontend
-    plan: free
     rootDir: drishti-frontend
     buildCommand: "npm install && npm run build"
     staticPublishPath: dist
