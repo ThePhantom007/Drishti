@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DRISHTI</string>
+
+    <!-- Login -->
+    <string name="login_subtitle">Field Screening for ASHA Workers</string>
+    <string name="login_welcome">Worker Login</string>
+    <string name="login_instructions">Enter your username and password to continue. Any credentials work for this demo build.</string>
+    <string name="label_username">Username</string>
+    <string name="label_password">Password</string>
+    <string name="btn_login">Login</string>
+    <string name="login_footnote">Your worker ID identifies your screenings for review — it isn\'t shared with patients.</string>
+    <string name="login_toast_welcome">Welcome, %1$s</string>
+
+    <!-- Home -->
+    <string name="home_title">DRISHTI</string>
+    <string name="home_greeting">Welcome back, %1$s</string>
+    <string name="home_subtitle">Today\'s Patients</string>
+    <string name="scan_new_patient">Scan New Patient</string>
+    <string name="empty_home_title">No patients screened today</string>
+    <string name="empty_home_subtitle">Tap \"Scan New Patient\" to begin a screening</string>
+    <string name="sync_all_uploaded">All synced</string>
+    <string name="sync_pending_format">%1$d pending sync</string>
+
+    <!-- Patient Registration -->
+    <string name="registration_title">New Patient</string>
+    <string name="label_full_name">Full Name (optional)</string>
+    <string name="label_patient_id">Patient / ASHA ID (optional)</string>
+    <string name="label_age">Age</string>
+    <string name="label_sex">Sex</string>
+    <string name="sex_male">Male</string>
+    <string name="sex_female">Female</string>
+    <string name="sex_other">Other</string>
+    <string name="label_preferred_language">Preferred Language</string>
+    <string name="label_facility_id">Facility ID</string>
+    <string name="label_district">District</string>
+    <string name="btn_skip_walkin">Skip — Walk-in</string>
+    <string name="btn_register_continue">Register &amp; Continue</string>
+
+    <!-- Capture -->
+    <string name="capture_title">Capture Retina Image</string>
+    <string name="capture_instruction">Align the retina within the circle and hold steady</string>
+    <string name="eye_od">Right (OD)</string>
+    <string name="eye_os">Left (OS)</string>
+    <string name="btn_retake">Retake</string>
+    <string name="btn_use_photo">Use Photo</string>
+
+    <!-- Processing -->
+    <string name="processing_title">Analyzing image…</string>
+    <string name="processing_subtitle">Running quality check, grading, and generating report</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <!-- Rejected -->
+    <string name="rejected_title">Image Needs Retake</string>
+    <string name="btn_retake_photo">Retake Photo</string>
+
+    <!-- Result -->
+    <string name="pending_review_banner">Pending specialist review — grade is provisional</string>
+    <string name="label_lesion_evidence">Lesion Analysis</string>
+    <string name="label_quality_check">Quality Check</string>
+    <string name="label_ai_explainability">AI Explainability</string>
+    <string name="label_original_capture">Original Capture</string>
+    <string name="label_heatmap_view">Grad-CAM Heatmap</string>
+<!--    <string name="btn_show_heatmap">Show Heatmap</string>-->
+    <string name="btn_show_original">Show Original</string>
+    <string name="image_mode_annotated">Annotated Image</string>
+    <string name="image_mode_heatmap">Grad-CAM Heatmap</string>
+    <string name="btn_show_heatmap">Show Heatmap</string>
+    <string name="btn_show_annotated">Show Annotated</string>
+    <string name="label_microaneurysms">Microaneurysms</string>
+    <string name="label_hemorrhages">Hemorrhages</string>
+    <string name="label_hard_exudate">Hard exudate area</string>
+    <string name="label_soft_exudate">Soft exudate present</string>
+    <string name="label_neovascularization">Neovascularization</string>
+    <string name="label_sharpness">Sharpness</string>
+    <string name="label_illumination">Illumination</string>
+    <string name="label_field_of_view">Field of View</string>
+    <string name="confidence_format">%1$d%% model confidence</string>
+    <string name="screened_footer_format">Captured %1$s · Graded in %2$.1fs</string>
+    <string name="btn_view_report">View Full Report (PDF)</string>
+    <string name="btn_play_audio">Play Audio Summary</string>
+    <string name="btn_done">Done</string>
+    <string name="screened_by_format">Screened by %1$s</string>
+    <string name="status_pending_label">Pending</string>
+    <string name="status_graded_label">Graded</string>
+    <string name="status_referred_label">Referred</string>
+
+    <!-- History -->
+    <string name="history_title">Patient History</string>
+    <string name="label_screening_history">Screening History</string>
+    <string name="btn_new_screening">New Screening</string>
+
+    <!-- Sync Queue -->
+    <string name="sync_queue_title">Sync Status</string>
+    <string name="btn_sync_now">Sync Now</string>
+    <string name="btn_retry">Retry</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Preferred Language</string>
+    <string name="settings_facility">Facility Info</string>
+    <string name="settings_about">About DRISHTI</string>
+    <string name="settings_logged_in_as">Logged in as</string>
+    <string name="settings_logout">Log Out</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_name">DRISHTI Alerts</string>
+    <string name="notif_channel_description">Patient registration, screening results, and sync updates</string>
+    <string name="notif_patient_registered_title">Patient Registered</string>
+    <string name="notif_patient_registered_body">%1$s has been added to today\'s queue</string>
+    <string name="notif_result_ready_title">Screening Result Ready</string>
+    <string name="notif_result_ready_body">%1$s — tap to review and play the audio summary</string>
+    <string name="notif_retake_needed_title">Retake Needed</string>
+    <string name="notif_retake_needed_body">Image quality check failed — recapture when ready</string>
+    <string name="notif_sync_complete_title">Sync Complete</string>
+    <string name="notif_sync_complete_body">%1$d screening(s) uploaded successfully</string>
+</resources>

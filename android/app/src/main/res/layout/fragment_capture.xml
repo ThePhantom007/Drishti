@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Camera preview goes here. Swap this View for a CameraX PreviewView when wiring logic. -->
+    <View
+        android:id="@+id/cameraPreview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#1A1A1A" />
+
+    <!-- Alignment guide -->
+    <View
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:layout_gravity="center"
+        android:background="@drawable/capture_guide_ring" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="180dp"
+        android:gravity="center"
+        android:paddingHorizontal="48dp"
+        android:text="@string/capture_instruction"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp" />
+
+    <!-- Top bar: back + eye selector -->
+    <LinearLayout
+        android:id="@+id/captureTopBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_arrow_back" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/eyeToggleGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:checkedButton="@id/odButton"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/odButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/eye_od"
+                android:textColor="@color/white"
+                app:strokeColor="@color/glass_border_strong" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/osButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/eye_os"
+                android:textColor="@color/white"
+                app:strokeColor="@color/glass_border_strong" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+    </LinearLayout>
+
+    <!-- Bottom: shutter -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingBottom="36dp"
+        android:paddingTop="16dp">
+
+        <ImageButton
+            android:id="@+id/shutterButton"
+            android:layout_width="76dp"
+            android:layout_height="76dp"
+            android:background="@drawable/bg_shutter_button"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_camera"
+            app:tint="@color/drishti_blue_800" />
+    </LinearLayout>
+
+    <!-- Review overlay (shown after a photo is taken, before upload) -->
+    <LinearLayout
+        android:id="@+id/reviewOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/glass_dark"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="20dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/retakeButton"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:layout_weight="1"
+            android:text="@string/btn_retake"
+            android:textColor="@color/white"
+            app:strokeColor="@color/glass_border_strong" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/usePhotoButton"
+            style="@style/Widget.Drishti.Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:backgroundTint="@color/glass_fab"
+            android:text="@string/btn_use_photo"
+            android:textColor="@color/white"
+            app:strokeColor="@color/glass_border_strong"
+            app:strokeWidth="1dp" />
+    </LinearLayout>
+
+</FrameLayout>
