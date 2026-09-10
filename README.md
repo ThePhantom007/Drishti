@@ -133,11 +133,11 @@ on why that's still consistent with this template's own structure guidance.
 
 ## 8. Final Presentation
 
-See [submission/PRESENTATION.md](submission/PRESENTATION.md).
+[Veyronix_SIH26038_DRISHTI_PPT.pdf](submission/Veyronix_SIH26038_DRISHTI_PPT.pdf)
 
 ## 9. Demo Video
 
-See [submission/DEMO.md](submission/DEMO.md).
+(https://drive.google.com/file/d/1fnFgtoWxl9rME_tax4MdIlPC4LXKwcv0/view?usp=sharing)
 
 ## 10. Screenshots / Prototype Photos
 
