@@ -1,0 +1,15 @@
+# Training-only dependencies — no MATLAB engine needed here.
+# Works with any modern CPython (3.10-3.14 all fine for these packages).
+torch>=2.2.0
+torchvision>=0.17.0
+timm>=0.9.16
+albumentations>=1.4.0
+scikit-learn>=1.4.0
+pandas>=2.2.0
+numpy>=1.26.0
+Pillow>=10.2.0
+opencv-python>=4.9.0
+onnx>=1.15.0
+onnxruntime>=1.17.0
+tqdm>=4.66.0
+matplotlib>=3.8.0

@@ -1,0 +1,8 @@
+# Root-level convenience file so `pip install -r requirements.txt` (as
+# referenced in this template's own Installation section) does something
+# sensible. The real requirements live in drishti-backend/, since this is
+# a two-service project — see README.md section 11 for the full picture,
+# including why drishti-backend/python/requirements-gateway.txt (with
+# MATLAB support) is a separate file from the one referenced below (which
+# omits matlabengine, for installing without a MATLAB license present).
+-r drishti-backend/requirements-deploy.txt

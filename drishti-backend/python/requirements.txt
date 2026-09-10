@@ -1,0 +1,5 @@
+# This file is kept only for reference / backward compatibility.
+# Install requirements-training.txt and requirements-gateway.txt separately
+# instead -- they have different Python version constraints (see each file).
+-r requirements-training.txt
+-r requirements-gateway.txt

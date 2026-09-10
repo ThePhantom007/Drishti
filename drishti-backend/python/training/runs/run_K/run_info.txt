@@ -1,0 +1,2 @@
+seed=169433433
+command_args={'data_dir': '../../data/aptos2019', 'include_idrid': True, 'idrid_dir': '../../data/idrid', 'epochs': 30, 'batch_size': 16, 'num_workers': 4, 'lr': 0.0003, 'out_dir': 'runs/run_K', 'patience': 7, 'imbalance_strategy': 'sampler', 'imbalance_power': 1.0, 'ordinal_weight': 0.3, 'no_tta': False, 'val_batch_multiplier': 2, 'seed': 169433433}

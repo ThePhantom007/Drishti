@@ -1,0 +1,22 @@
+# Deployment requirements for drishti-backend (e.g. Render, or any host
+# without MATLAB installed). Use this instead of
+# python/requirements-gateway.txt when deploying -- it deliberately
+# excludes matlabengine, which isn't installable/usable without an actual
+# MATLAB installation matching its pinned version. The gateway already
+# handles this at runtime (matlab_bridge.py falls back to its built-in
+# mock-inference mode automatically when matlabengine can't be imported),
+# so a deployment without MATLAB is a legitimate, fully working demo
+# configuration -- not a broken one.
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+pydantic>=2.6.0
+sqlalchemy>=2.0.0
+gTTS>=2.5.0              # native-language voice read-out (needs internet -- see tts.py)
+deep-translator>=1.11.0  # English -> regional-language translation for the above
+
+# PostgreSQL driver -- required for SQLAlchemy to connect to whatever
+# DATABASE_URL you configure (e.g. a Neon or Supabase connection string).
+# This is the driver only, not application logic: no query/schema code
+# here assumes Postgres specifically, so nothing else needed to change.
+psycopg2-binary>=2.9.9

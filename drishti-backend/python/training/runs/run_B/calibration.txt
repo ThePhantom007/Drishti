@@ -1,0 +1,4 @@
+temperature=nan
+# Copy into config/pipeline_config.yaml as:
+# grading.platt_A: nan
+# grading.platt_B: 0.0

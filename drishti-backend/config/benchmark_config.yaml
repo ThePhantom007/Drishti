@@ -1,0 +1,54 @@
+# Benchmark/evaluation config — RELAXED image-quality thresholds for testing
+# against already-published research datasets (APTOS/IDRiD/Messidor-2).
+#
+# These datasets are pre-validated, expert-labeled, and often pre-downscaled
+# or compressed by the dataset publishers -- they were never meant to meet a
+# *live capture* quality bar. The strict thresholds in pipeline_config.yaml
+# exist to catch bad photos from a field worker's camera in real deployment;
+# applying them to a benchmark dataset just rejects valid, already-graded
+# images and gives you no evaluation signal at all.
+#
+# Use this file ONLY for offline evaluation/benchmarking:
+#   result = runScreeningPipeline(imgPath, 'config/benchmark_config.yaml')
+# Keep using pipeline_config.yaml (unmodified) for the actual deployed app.
+
+paths:
+  models_dir: "matlab/models"
+  severity_model: "severity_net.onnx"
+  vessel_model: "vessel_seg_net.onnx"
+  lesion_model: "lesion_seg_net.onnx"
+  reports_out_dir: "output/reports_benchmark"
+
+image_quality:
+  min_resolution_px: 250           # relaxed -- many APTOS images are pre-downscaled
+  min_sharpness_laplacian_var: 10  # relaxed -- compression softens sharpness metric
+  illumination_low_pct: 8
+  illumination_high_pct: 8
+  min_field_of_view_ratio: 0.4     # relaxed -- some crops don't fill the expected circle
+
+enhancement:
+  clahe_clip_limit: 2.0
+  clahe_tile_grid_size: [8, 8]
+  denoise_method: "nlm"
+  illumination_norm_method: "shade_correction"
+
+grading:
+  icdr_levels: [0, 1, 2, 3, 4]
+  referable_threshold_level: 2
+  target_sensitivity_referable: 0.90
+  target_specificity_referable: 0.85
+  confidence_review_threshold: 0.70
+  platt_A: 0.4947   # from runs/final/calibration.txt -- 1/temperature
+  platt_B: 0.0      # from runs/final/calibration.txt
+
+explainability:
+  gradcam_target_layer: "x_conv_head_Conv" # confirmed actual layer name (see pipeline_config.yaml)
+  report_generation_time_budget_sec: 30
+
+simulink:
+  patients_per_year_target: 100000
+  working_days_per_year: 250
+  avg_review_time_sec_confident: 15
+  avg_review_time_sec_flagged: 90
+  bandwidth_per_image_mb: 3.5
+

@@ -1,0 +1,4 @@
+temperature=1.8438
+# Copy into config/pipeline_config.yaml as:
+# grading.platt_A: 0.5424
+# grading.platt_B: 0.0

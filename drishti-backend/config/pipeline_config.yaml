@@ -1,0 +1,93 @@
+# Configuration for the DR screening pipeline
+# Loaded by matlab/utils/loadConfig.m and python/gateway/config.py — keep both in sync.
+
+paths:
+  models_dir: "matlab/models"
+  # FINAL MODEL: weighted ensemble of 3 independently trained checkpoints,
+  # selected after a full seed-search + weight-optimization + threshold-tuning
+  # process (see docs/architecture.md and DRISHTI_Detailed_Reference.docx
+  # Section 5.7-5.9 for the full story). Chosen over several other candidates
+  # specifically for its balance of QWK, effective sensitivity, and a
+  # SUSTAINABLE review rate (43.6% -> ~73% reviewer utilization at 100,000
+  # patients/year with a realistically-available ~3hr/day reviewer -- real
+  # margin below the 85% instability line, unlike some higher-raw-sensitivity
+  # alternatives that were rejected for running too close to that edge).
+  #
+  # Measured on Messidor-2 (external benchmark): sensitivity=0.7352,
+  # specificity=0.8508, QWK=0.5509, effective_sensitivity=0.8928,
+  # review_rate=43.6% (review_threshold=0.70, TTA on).
+  severity_model: ["severity_net_epoch_07.onnx", "severity_net_epoch_10.onnx", "severity_net_epoch_11.onnx"]
+  # Order matches: run_I/epoch_07 (I07), run_K/epoch_10 (K10), run_K/epoch_11 (K11)
+  severity_model_weights: [0.3763, 0.0862, 0.5375]
+  vessel_model: "vessel_seg_net.onnx"
+  lesion_model: "lesion_seg_net.onnx"
+  reports_out_dir: "output/reports"
+
+image_quality:
+  min_resolution_px: 1500          # shorter side, below this -> reject
+  min_sharpness_laplacian_var: 0.2 # empirically calibrated via
+                                    # matlab/tools/calibrateSharpnessThreshold.m on the
+                                    # FULL APTOS 2019 dataset (n=3662): blurred control=
+                                    # 0.0666, real images ranged 0.3475-21.443 (median
+                                    # 2.02, mean 3.52). Threshold sits ~5x above the
+                                    # blur control and comfortably below the true
+                                    # dataset minimum. Re-run calibration if you change
+                                    # the enhancement pipeline or switch datasets.
+  illumination_low_pct: 5          # % of pixels below this intensity -> underexposed
+  illumination_high_pct: 5         # % of pixels above this intensity -> overexposed
+  min_field_of_view_ratio: 0.6     # retina disc area / expected FOV circle area
+
+enhancement:
+  clahe_clip_limit: 2.0
+  clahe_tile_grid_size: [8, 8]
+  denoise_method: "nlm"            # non-local means
+  illumination_norm_method: "shade_correction"
+
+grading:
+  icdr_levels: [0, 1, 2, 3, 4]     # 0=No DR, 1=Mild NPDR, 2=Moderate NPDR, 3=Severe NPDR, 4=PDR
+  referable_threshold_level: 2     # level >= this is "referable DR" (used for the DISPLAYED
+                                    # grade's referable flag when no tuned threshold below is set)
+  target_sensitivity_referable: 0.90
+  target_specificity_referable: 0.85
+  confidence_review_threshold: 0.70  # below this confidence -> force human review
+  # Platt/temperature scaling RESET TO IDENTITY (platt_A=1, platt_B=0) for the
+  # new final ensemble above. The previous values (platt_A=0.4947) were fit
+  # for a single, different, now-retired model checkpoint and do not transfer
+  # to this ensemble's output distribution -- using them here would silently
+  # distort the confidence-based review-routing decision away from what was
+  # actually measured. The review_rate=43.6% / effective_sensitivity=0.8928
+  # reported for this ensemble were computed on RAW (uncalibrated) ensemble
+  # confidence, so identity scaling is what matches that validated number.
+  # TODO before final demo if time allows: refit temperature scaling
+  # specifically on this ensemble's outputs (same method as
+  # train_severity_classifier.py's fit_temperature_scaling, applied to the
+  # ensemble's combined probabilities on a held-out split) for a properly
+  # calibrated confidence score rather than this identity placeholder.
+  platt_A: 1.0
+  platt_B: 0.0
+  # referable_probability_threshold: 0.xxxx
+  # Optional. When set, the BINARY referable decision is made by thresholding
+  # P(referable) = P(icdr_level >= referable_threshold_level) directly, instead
+  # of being implied by argmax(probabilities) (equivalent to an implicit 0.5
+  # threshold). This decouples the clinically-operative referable/not decision
+  # from the displayed icdr_level grade (which always stays argmax-based, for
+  # interpretability) and searches a materially richer trade-off space for
+  # hitting the sensitivity/specificity targets above. Find this value with
+  # python/training/tune_referable_threshold.py -- do not hand-guess it, same
+  # reasoning as severity_model_weights: an unvalidated threshold is no better
+  # than an unvalidated constant was earlier in this project. Leave commented
+  # out to use the argmax-implied (0.5-equivalent) decision.
+
+explainability:
+  gradcam_target_layer: "x_conv_head_Conv" # confirmed actual layer name from
+                                             # imported severity_net.onnx (was
+                                             # "last_conv" placeholder before
+                                             # the model existed to check against)
+  report_generation_time_budget_sec: 30   # ophthalmologist review target
+
+simulink:
+  patients_per_year_target: 100000
+  working_days_per_year: 250
+  avg_review_time_sec_confident: 15
+  avg_review_time_sec_flagged: 90
+  bandwidth_per_image_mb: 3.5

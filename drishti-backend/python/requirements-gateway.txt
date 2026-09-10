@@ -1,0 +1,15 @@
+# Gateway dependencies. IMPORTANT: matlabengine requires a Python version
+# matching your MATLAB release's supported list (check MathWorks' "Versions
+# of Python Compatible with MATLAB Products by Release" page). For MATLAB
+# R2026a this is Python 3.9-3.13 -- NOT 3.14. Use a separate virtual
+# environment on a supported Python version if your default interpreter
+# (e.g. python.org's latest) is newer than what MATLAB supports.
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+pydantic>=2.6.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9 # PostgreSQL driver -- required once DATABASE_URL points at Neon/Postgres instead of the local SQLite fallback
+gTTS>=2.5.0             # native-language voice read-out (free, needs internet -- see tts.py)
+deep-translator>=1.11.0 # English -> regional-language translation for the above
+matlabengine  # pin exactly, e.g. matlabengine==26.1.* for MATLAB R2026a

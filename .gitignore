@@ -1,0 +1,38 @@
+# --- Python (drishti-backend) ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# --- Local dev database & generated artifacts (never commit these) ---
+drishti-backend/output/
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Node / Vite (drishti-frontend) ---
+node_modules/
+dist/
+.vite/
+
+# --- Environment files (never commit real secrets) ---
+.env
+.env.local
+.env.*.local
+*.env
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- MATLAB ---
+*.asv
+*.m~
+slprj/
+
+# --- Logs ---
+*.log
