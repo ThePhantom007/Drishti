@@ -98,7 +98,15 @@ app.add_middleware(
 # ran while a StaticFiles mount sat in front of it.
 
 
-@app.get("/api/health", response_model=HealthResponse)
+# methods=["GET", "HEAD"] rather than the plain @app.get shortcut: FastAPI
+# does NOT automatically accept HEAD on a GET-only route (confirmed by
+# testing -- a bare @app.get returns 405 for HEAD). Uptime monitors
+# (UptimeRobot included) commonly probe with HEAD requests rather than
+# GET, and a 405 there gets recorded as "down" even though the service is
+# actually healthy and every real GET request succeeds -- which is
+# exactly what showed up in the Render logs: HEAD /api/health 405s
+# interleaved with completely normal GET /api/health 200s.
+@app.api_route("/api/health", methods=["GET", "HEAD"], response_model=HealthResponse)
 def health():
     return HealthResponse(status="ok", model_version=settings.model_version)
 
