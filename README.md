@@ -3,6 +3,8 @@
 This repository is the working implementation for Smart India Hackathon
 2026, Problem Statement SIH26038.
 
+**Live deployment:** https://drishti-frontend-c9mj.onrender.com/
+
 ## 1. Project Information
 
 - **Project Title:** DRISHTI — Explainable AI Diabetic Retinopathy Screening for Rural India
