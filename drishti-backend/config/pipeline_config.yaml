@@ -5,8 +5,7 @@ paths:
   models_dir: "matlab/models"
   # FINAL MODEL: weighted ensemble of 3 independently trained checkpoints,
   # selected after a full seed-search + weight-optimization + threshold-tuning
-  # process (see docs/architecture.md and DRISHTI_Detailed_Reference.docx
-  # Section 5.7-5.9 for the full story). Chosen over several other candidates
+  # process (see docs/architecture.md). Chosen over several other candidates
   # specifically for its balance of QWK, effective sensitivity, and a
   # SUSTAINABLE review rate (43.6% -> ~73% reviewer utilization at 100,000
   # patients/year with a realistically-available ~3hr/day reviewer -- real

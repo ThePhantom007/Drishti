@@ -128,11 +128,6 @@ DRISHTI/
 | Demo video link | `submission/DEMO.md` |
 | Project overview | `README.md` (this file) |
 
-This repository uses `drishti-frontend/` and `drishti-backend/` instead of
-a single `src/` folder because it's a two-service project rather than a
-single script — see `docs/architecture.md` for why, and the note there
-on why that's still consistent with this template's own structure guidance.
-
 ## 8. Final Presentation
 
 [Veyronix_SIH26038_DRISHTI_PPT.pdf](submission/Veyronix_SIH26038_DRISHTI_PPT.pdf)
@@ -208,9 +203,6 @@ running on `http://localhost:8000`.
 - Persistent object storage (e.g. Cloudflare R2) for generated report
   files, so they survive a redeploy on ephemeral hosting rather than only
   patient/screening data (already durable via PostgreSQL).
-- Clinical vitals (HbA1c, blood pressure) captured at screening time
-  aren't yet persisted server-side — currently collected in the UI but
-  not sent to or stored by the backend.
 - A capacity-planning API endpoint backed by the real Simulink model
   parameters, replacing the current simplified client-side estimate.
 - Signed/expiring URLs for report files instead of the current
@@ -218,11 +210,3 @@ running on `http://localhost:8000`.
   shared links.
 - Native Android app for fully offline ASHA-side capture, syncing via the
   existing `/api/sync` batch endpoint.
-
-## Important
-
-Before submission, make sure the repository is accessible to reviewers.
-Do **not** upload passwords, API keys, access tokens, `.env` files
-containing secrets, real patient data, or other confidential credentials.
-The three seeded demo account credentials above are intentionally public
-and meant for reviewers — they are not a leaked secret.

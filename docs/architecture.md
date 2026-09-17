@@ -74,16 +74,4 @@ Stores patients, screenings (including both the rule-based and
 learned-model grades, and the human reviewer's final decision), user
 accounts, and session tokens. Every dashboard in the frontend — the
 review queue, patient history, program analytics, and capacity model —
-reads from this same database, so there's a single source of truth
-rather than per-page mock data.
-
-## For reviewers
-
-This repository deviates from the plain `src/main.py` single-file layout
-in the top-level template because it's a two-service project (a FastAPI
-backend with its own ML pipeline, and a separate React frontend) rather
-than a single script — the template's own "Repository Structure" section
-explicitly allows keeping "your normal project folders" instead of
-forcing everything into `src/`. See the root `README.md` for exact
-install/run instructions for both services, and
-`drishti-backend/docs/api_contract.md` for the full REST API reference.
+reads from this same database.

@@ -1,3 +1,7 @@
+"""
+Only used for testing/evaluation not actual deployment. See pipeline_config.yaml for the real deployment config.
+"""
+
 # Benchmark/evaluation config — RELAXED image-quality thresholds for testing
 # against already-published research datasets (APTOS/IDRiD/Messidor-2).
 #
@@ -8,9 +12,7 @@
 # applying them to a benchmark dataset just rejects valid, already-graded
 # images and gives you no evaluation signal at all.
 #
-# Use this file ONLY for offline evaluation/benchmarking:
 #   result = runScreeningPipeline(imgPath, 'config/benchmark_config.yaml')
-# Keep using pipeline_config.yaml (unmodified) for the actual deployed app.
 
 paths:
   models_dir: "matlab/models"
