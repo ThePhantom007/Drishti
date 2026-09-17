@@ -15,7 +15,7 @@ import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
 import { Eye, ShieldCheck } from 'lucide-react';
 import {
-  INITIAL_NOTIFICATIONS, API_BASE_URL, authFetch, apiLogout, apiFetchCurrentUser,
+  API_BASE_URL, authFetch, apiLogout, apiFetchCurrentUser,
   setOnUnauthorized, getAuthToken, ROLE_ALLOWED_VIEWS, getDefaultViewForRole,
 } from './api';
 import './styles.css';
@@ -39,7 +39,7 @@ export default function App() {
   const [reportCase, setReportCase] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('en');
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -111,6 +111,31 @@ export default function App() {
     return () => clearInterval(intervalId);
   }, [currentRole, currentView, fetchQueue]);
 
+  // Real, backend-generated alerts (GET /api/notifications) -- replaces
+  // the old hardcoded INITIAL_NOTIFICATIONS demo array entirely. Fetched
+  // once a real user is signed in, and polled the same way the queue is,
+  // so a new urgent/disagreement case shows up as a notification without
+  // needing to reopen the drawer.
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchNotifications = async () => {
+      try {
+        const response = await authFetch('/api/notifications?limit=50');
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data.notifications || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+    const intervalId = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(intervalId);
+  }, [currentUser]);
+
   // Guard against a stale/deep-linked view that this role isn't allowed
   // to see (e.g. an ASHA account somehow lands on 'dashboard') -- redirect
   // to that role's default view instead of rendering it. This mirrors the
@@ -142,11 +167,20 @@ export default function App() {
   };
 
   const handleMarkNotificationAsRead = (notifId) => {
+    // Optimistic update first (instant UI feedback), real request right
+    // behind it -- read state is now tracked server-side per-user, not
+    // just mutated in this tab's local array.
     setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+    authFetch(`/api/notifications/${notifId}/read`, { method: 'POST' }).catch(err =>
+      console.error('Failed to mark notification as read:', err)
+    );
   };
 
   const handleMarkAllNotificationsAsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    authFetch('/api/notifications/read-all', { method: 'POST' }).catch(err =>
+      console.error('Failed to mark all notifications as read:', err)
+    );
   };
 
   const handleNotificationSelectCase = (caseId, notifId) => {

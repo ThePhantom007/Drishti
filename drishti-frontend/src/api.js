@@ -199,45 +199,6 @@ export const ROLE_PROFILES = [
   }
 ];
 
-export const INITIAL_NOTIFICATIONS = [
-  {
-    id: 'notif-1',
-    type: 'urgent',
-    title: 'High Priority Referral Flagged',
-    desc: 'Patient 9f1c2a01 (Ramesh Kumar) at PHC Nanded Rural detected with Severe NPDR (93% confidence). Specialist review required within 24h.',
-    time: '12 mins ago',
-    patient_id: '9f1c2a01',
-    patientId: '9f1c2a01',
-    case_id: 'scr_101',
-    caseId: 'scr_101',
-    read: false
-  },
-  {
-    id: 'notif-2',
-    type: 'warning',
-    title: 'Dual-Path Disagreement Signal',
-    desc: 'Patient 9f1c2a02 (Sunita Patil) has Moderate NPDR with 65% calibrated confidence. Rule-based vs learned model disagreement.',
-    time: '45 mins ago',
-    patient_id: '9f1c2a02',
-    patientId: '9f1c2a02',
-    case_id: 'scr_102',
-    caseId: 'scr_102',
-    read: false
-  },
-  {
-    id: 'notif-3',
-    type: 'info',
-    title: 'District Batch Sync Complete',
-    desc: 'PHC Yavatmal Center successfully uploaded 28 new fundus captures with full telemetry.',
-    time: '2 hours ago',
-    patient_id: null,
-    patientId: null,
-    case_id: null,
-    caseId: null,
-    read: false
-  }
-];
-
 // Native Clinical Translations across all 22 Official Languages + English
 export const CLINICAL_TRANSLATIONS = {
   hi: {

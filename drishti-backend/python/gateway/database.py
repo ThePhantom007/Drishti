@@ -74,6 +74,39 @@ class AuthSession(Base):
     expires_at = Column(DateTime, nullable=False)
 
 
+class Notification(Base):
+    """A real, backend-generated clinical alert -- replaces the frontend's
+    old hardcoded INITIAL_NOTIFICATIONS demo array. Created automatically
+    when a screening needs attention (see main.py's screen() /
+    sync_offline_batch()); not user-authored."""
+    __tablename__ = "notifications"
+
+    id = Column(String, primary_key=True, default=_uuid)
+    type = Column(String, nullable=False)  # 'urgent' | 'warning' | 'info'
+    title = Column(String, nullable=False)
+    message = Column(String, nullable=False)
+    # Which role this alert is meant for. NULL would mean "everyone" but
+    # nothing currently generates a broadcast-to-all notification -- every
+    # trigger today is queue/review related, which is the doctor's domain.
+    target_role = Column(String, nullable=True)
+    patient_id = Column(String, ForeignKey("patients.id"), nullable=True)
+    screening_id = Column(String, ForeignKey("screenings.id"), nullable=True)
+    created_at = Column(DateTime, default=dt.datetime.utcnow)
+
+
+class NotificationRead(Base):
+    """Per-user read tracking. A notification can be relevant to every
+    doctor at once (it's role-targeted, not assigned to one specific
+    person), so "read" has to be tracked per (notification, user) pair --
+    one doctor dismissing an alert shouldn't mark it read for every other
+    doctor too."""
+    __tablename__ = "notification_reads"
+
+    notification_id = Column(String, ForeignKey("notifications.id"), primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), primary_key=True)
+    read_at = Column(DateTime, default=dt.datetime.utcnow)
+
+
 class Patient(Base):
     __tablename__ = "patients"
 

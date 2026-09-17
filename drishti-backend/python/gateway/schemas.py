@@ -278,3 +278,21 @@ class UserOut(BaseModel):
 class AuthResponse(BaseModel):
     token: str
     user: UserOut
+
+
+# --- Notifications -------------------------------------------------------
+
+class NotificationOut(BaseModel):
+    id: str
+    type: str
+    title: str
+    desc: str
+    time: str  # human-relative ("12 mins ago"), computed at request time
+    patient_id: Optional[str] = None
+    case_id: Optional[str] = None
+    read: bool
+
+
+class NotificationList(BaseModel):
+    notifications: list[NotificationOut]
+    unread_count: int

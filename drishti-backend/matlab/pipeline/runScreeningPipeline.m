@@ -62,7 +62,17 @@ function result = runScreeningPipeline(imgPath, cfgPath)
     grading = gradeDRSeverity(lesionFeatures, cfg);
     calibration = calibrateConfidence(grading.model_confidence, cfg);
     grading.model_confidence = calibration.confidence;
-    grading.requires_human_review = calibration.requires_human_review;
+    % A rule-based/learned-model disagreement must trigger review on its
+    % own, independent of raw confidence -- this is the whole point of
+    % running "dual-path" grading in the first place ("disagreement is a
+    % review signal, not hidden," per the project's own stated design).
+    % Gating purely on calibrated confidence (the previous behaviour)
+    % meant a *confident* disagreement -- the exact case dual-path grading
+    % exists to catch -- could clear automatically and never reach a
+    % human, silently defeating the safety feature for precisely the
+    % cases it was built to catch.
+    disagreement = grading.rule_based_level ~= grading.icdr_level;
+    grading.requires_human_review = calibration.requires_human_review || disagreement;
 
     % --- Stage 4: Explainability ------------------------------------------------
     net = getSeverityNet(cfg); % returns [] if no trained model on disk yet
@@ -96,7 +106,7 @@ function result = runScreeningPipeline(imgPath, cfgPath)
             'rule_based_label', ruleLabels{grading.rule_based_level + 1}, ...
             'learned_level', grading.icdr_level, ...
             'learned_label', grading.icdr_label, ...
-            'disagreement', grading.rule_based_level ~= grading.icdr_level ...
+            'disagreement', disagreement ...
         ), ...
         'lesions', struct( ...
             'microaneurysm_count', maResult.count, ...

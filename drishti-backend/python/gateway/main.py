@@ -27,7 +27,7 @@ import matlab_bridge
 import tts
 from auth import create_session, get_current_user, get_current_user_flexible, hash_password, require_roles, verify_password
 from config import settings
-from database import AuthSession, Patient, Screening, ReviewStatus, SessionLocal, User, UserRole, get_db, init_db
+from database import AuthSession, Patient, Screening, ReviewStatus, SessionLocal, User, UserRole, Notification, NotificationRead, get_db, init_db
 from schemas import (
     AnalyticsByDistrict,
     AnalyticsSummary,
@@ -42,6 +42,8 @@ from schemas import (
     HealthResponse,
     LesionInfo,
     LoginRequest,
+    NotificationList,
+    NotificationOut,
     PatientCreate,
     PatientDetail,
     PatientList,
@@ -165,6 +167,73 @@ def me(current_user: User = Depends(get_current_user)):
 
 
 # ============================================================================
+# Notifications
+# ============================================================================
+@app.get("/api/notifications", response_model=NotificationList)
+def list_notifications(
+    db: Session = Depends(get_db),
+    limit: int = 50,
+    current_user: User = Depends(get_current_user),
+):
+    """Real, backend-generated alerts -- see _create_review_notification.
+    Every role can call this (an ASHA worker seeing "no alerts" is still
+    a meaningful, correct response), but in practice only doctor-targeted
+    notifications exist today since every trigger is review-queue related."""
+    notifications = (
+        db.query(Notification)
+        .filter((Notification.target_role.is_(None)) | (Notification.target_role == current_user.role.value))
+        .order_by(Notification.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    read_ids = {
+        r.notification_id for r in
+        db.query(NotificationRead)
+        .filter(NotificationRead.user_id == current_user.id)
+        .filter(NotificationRead.notification_id.in_([n.id for n in notifications]))
+        .all()
+    }
+    out = [_notification_out(n, read_ids) for n in notifications]
+    return NotificationList(notifications=out, unread_count=sum(1 for n in out if not n.read))
+
+
+@app.post("/api/notifications/{notification_id}/read")
+def mark_notification_read(
+    notification_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not db.get(Notification, notification_id):
+        raise HTTPException(status_code=404, detail="Notification not found")
+    existing = db.get(NotificationRead, (notification_id, current_user.id))
+    if not existing:
+        db.add(NotificationRead(notification_id=notification_id, user_id=current_user.id))
+        db.commit()
+    return {"status": "ok"}
+
+
+@app.post("/api/notifications/read-all")
+def mark_all_notifications_read(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    visible = (
+        db.query(Notification.id)
+        .filter((Notification.target_role.is_(None)) | (Notification.target_role == current_user.role.value))
+        .all()
+    )
+    already_read = {
+        r.notification_id for r in
+        db.query(NotificationRead).filter(NotificationRead.user_id == current_user.id).all()
+    }
+    for (notif_id,) in visible:
+        if notif_id not in already_read:
+            db.add(NotificationRead(notification_id=notif_id, user_id=current_user.id))
+    db.commit()
+    return {"status": "ok"}
+
+
+# ============================================================================
 # Patients
 # ============================================================================
 @app.post("/api/patients", response_model=PatientOut)
@@ -238,6 +307,72 @@ def _patient_out(patient: Patient) -> PatientOut:
         sex=patient.sex, phone=patient.phone, preferred_language=patient.preferred_language,
         facility_id=patient.facility_id, district=patient.district, registered_by=patient.registered_by,
         created_at=patient.created_at, screening_count=len(patient.screenings),
+    )
+
+
+def _relative_time(when: dt.datetime) -> str:
+    """'12 mins ago' style string, matching what NotificationDrawer.jsx
+    already expects (this used to be hand-authored mock text)."""
+    delta = dt.datetime.utcnow() - when
+    seconds = int(delta.total_seconds())
+    if seconds < 60:
+        return "just now"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes} min{'s' if minutes != 1 else ''} ago"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    days = hours // 24
+    return f"{days} day{'s' if days != 1 else ''} ago"
+
+
+def _create_review_notification(db: Session, screening: Screening, patient: Optional[Patient]) -> None:
+    """Called whenever a screening is created that needs human review.
+    Replaces the frontend's old hardcoded demo notifications with real
+    alerts generated from what the pipeline actually found -- severe/
+    referable cases and dual-path disagreements are exactly the two
+    situations the project's own design calls out as needing a visible
+    signal, so those get distinct urgent/warning types; anything else
+    that still needs a look gets a plain info-level alert."""
+    if not screening.requires_human_review:
+        return
+
+    patient_name = patient.name if patient else "Unknown patient"
+    level_label = screening.icdr_label or "Unknown severity"
+
+    if screening.icdr_level is not None and screening.icdr_level >= 3:
+        notif_type, title = "urgent", "High Priority Referral Flagged"
+        message = (
+            f"Patient {patient_name} ({screening.patient_id[:8]}) detected with "
+            f"{level_label} ({(screening.confidence or 0) * 100:.0f}% confidence). "
+            "Specialist review required."
+        )
+    elif screening.grading_disagreement:
+        notif_type, title = "warning", "Dual-Path Disagreement Signal"
+        rule_label = ICDR_LABELS[screening.rule_based_icdr_level] if screening.rule_based_icdr_level is not None else "?"
+        message = (
+            f"Patient {patient_name} ({screening.patient_id[:8]}) has {level_label} -- "
+            f"rule-based grading suggested {rule_label} instead. Reviewer input needed to resolve."
+        )
+    else:
+        notif_type, title = "info", "New Case Pending Review"
+        message = (
+            f"Patient {patient_name} ({screening.patient_id[:8]}) graded {level_label} at "
+            f"{(screening.confidence or 0) * 100:.0f}% confidence -- below the auto-clear threshold."
+        )
+
+    db.add(Notification(
+        type=notif_type, title=title, message=message, target_role=UserRole.DOCTOR.value,
+        patient_id=screening.patient_id, screening_id=screening.id,
+    ))
+    db.commit()
+
+
+def _notification_out(n: Notification, read_ids: set[str]) -> NotificationOut:
+    return NotificationOut(
+        id=n.id, type=n.type, title=n.title, desc=n.message, time=_relative_time(n.created_at),
+        patient_id=n.patient_id, case_id=n.screening_id, read=n.id in read_ids,
     )
 
 
@@ -356,6 +491,7 @@ async def screen(
         processing_time_ms=result["processing_time_ms"], review_status=review_status,
     )
     db.add(screening); db.commit(); db.refresh(screening)
+    _create_review_notification(db, screening, patient)
 
     audio_url = None
     try:
@@ -702,12 +838,15 @@ async def sync_offline_batch(
                 continue
 
             grading, lesions, report = result["grading"], result["lesions"], result["report"]
+            grading_paths_raw = result.get("grading_paths")
             review_status = ReviewStatus.PENDING if grading["requires_human_review"] else ReviewStatus.NOT_REQUIRED
             screening = Screening(
                 patient_id=patient_id, status="graded",
                 icdr_level=grading["icdr_level"], icdr_label=grading["icdr_label"],
                 referable=grading["referable"], confidence=grading["confidence"],
                 requires_human_review=grading["requires_human_review"],
+                rule_based_icdr_level=grading_paths_raw["rule_based_level"] if grading_paths_raw else None,
+                grading_disagreement=grading_paths_raw["disagreement"] if grading_paths_raw else None,
                 microaneurysm_count=lesions["microaneurysm_count"], hemorrhage_count=lesions["hemorrhage_count"],
                 hard_exudate_area_pct=lesions["hard_exudate_area_pct"],
                 soft_exudate_present=lesions["soft_exudate_present"],
@@ -717,6 +856,7 @@ async def sync_offline_batch(
                 client_local_id=local_id, captured_at=captured_at,
             )
             db.add(screening); db.commit(); db.refresh(screening)
+            _create_review_notification(db, screening, db.get(Patient, patient_id))
             results.append(SyncItemResult(
                 client_local_id=local_id, status="graded", screening_id=screening.id,
                 icdr_level=grading["icdr_level"], referable=grading["referable"],

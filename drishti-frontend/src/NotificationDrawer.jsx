@@ -1,6 +1,5 @@
 import React from 'react';
 import { Bell, AlertTriangle, CheckCircle, Clock, X, Eye, Check, CheckCheck } from 'lucide-react';
-import { INITIAL_NOTIFICATIONS } from './api';
 
 export default function NotificationDrawer({ 
   isOpen, 
@@ -8,7 +7,7 @@ export default function NotificationDrawer({
   onSelectNotificationCase, 
   onMarkAsRead, 
   onMarkAllAsRead, 
-  notifications = INITIAL_NOTIFICATIONS 
+  notifications = [] 
 }) {
   if (!isOpen) return null;
 
