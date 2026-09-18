@@ -148,19 +148,29 @@ export default function ReportModal({ isOpen, onClose, caseData, selectedLanguag
             <div className="lesions-summary-grid">
               <div className="lesion-stat-card">
                 <span className="stat-label">Microaneurysms</span>
-                <span className="stat-num">{caseData.lesions?.microaneurysm_count ?? caseData.lesions?.microaneurysms ?? 14}</span>
+                <span className="stat-num">{caseData.lesions?.microaneurysm_count ?? caseData.microaneurysm_count ?? caseData.lesions?.microaneurysms ?? '—'}</span>
               </div>
               <div className="lesion-stat-card">
                 <span className="stat-label">Hemorrhages</span>
-                <span className="stat-num">{caseData.lesions?.hemorrhage_count ?? caseData.lesions?.hemorrhages ?? 3}</span>
+                <span className="stat-num">{caseData.lesions?.hemorrhage_count ?? caseData.hemorrhage_count ?? caseData.lesions?.hemorrhages ?? '—'}</span>
               </div>
               <div className="lesion-stat-card">
                 <span className="stat-label">Hard Exudates</span>
-                <span className="stat-num">{caseData.lesions?.hard_exudate_area_pct ? `${caseData.lesions.hard_exudate_area_pct}%` : (caseData.lesions?.hardExudates ?? '1.2%')}</span>
+                <span className="stat-num">{
+                  caseData.lesions?.hard_exudate_area_pct != null ? `${caseData.lesions.hard_exudate_area_pct}%`
+                    : caseData.hard_exudate_area_pct != null ? `${caseData.hard_exudate_area_pct}%`
+                    : (caseData.lesions?.hardExudates ?? '—')
+                }</span>
               </div>
               <div className="lesion-stat-card">
                 <span className="stat-label">Neovascularization</span>
-                <span className="stat-num">{caseData.lesions?.neovascularization ?? 'None'}</span>
+                <span className="stat-num">{
+                  caseData.lesions?.neovascularization_detected != null
+                    ? (caseData.lesions.neovascularization_detected ? 'Detected' : 'None')
+                    : caseData.neovascularization_detected != null
+                    ? (caseData.neovascularization_detected ? 'Detected' : 'None')
+                    : (caseData.lesions?.neovascularization ?? 'None')
+                }</span>
               </div>
             </div>
           </div>

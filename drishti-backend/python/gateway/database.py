@@ -120,6 +120,14 @@ class Patient(Base):
     facility_id = Column(String, nullable=True)    # PHC/health-centre code, powers the district/geo dashboard
     district = Column(String, nullable=True)
     registered_by = Column(String, nullable=True)  # ASHA/field worker identifier
+    # Self-reported diabetes history, captured once at registration. Duration
+    # is deliberately NOT stored as a fixed "X years" string (which would go
+    # stale the moment it was written) -- instead we store the diagnosis
+    # year and compute the duration fresh on every read (see
+    # _diabetes_duration_label), so it's always accurate as of today rather
+    # than frozen at whatever value was typed in at registration.
+    diabetes_type = Column(String, nullable=True)          # "Type 1" / "Type 2"
+    diabetes_diagnosed_year = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=dt.datetime.utcnow)
 
     screenings = relationship("Screening", back_populates="patient", order_by="Screening.created_at.desc()")

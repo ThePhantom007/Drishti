@@ -123,6 +123,31 @@ export default function PatientHistory({
     [activePatient]
   );
 
+  // The "Retinal Studio" / "PDF Report" buttons and the "Simple Patient
+  // Result Card" tab all used to receive `activePatient` directly -- the
+  // raw PatientDetail object, which has no icdr_level, confidence,
+  // explainability images, lesion counts, etc. (those live on individual
+  // *screenings*, not the patient record itself). CaseDetail/ReportModal/
+  // PatientResultCard would then find all of those fields undefined and
+  // silently render their own hardcoded placeholder grade/confidence --
+  // which is exactly the "still shows default values" bug. The fix is to
+  // hand them the patient's actual latest graded screening (which the
+  // backend already returns pre-merged with patient_name/age/sex/district
+  // via GET /api/patients/{id}) instead of the patient record itself.
+  // API returns screenings newest-first, so the first "graded" one is the
+  // most recent.
+  const latestGradedScreening = useMemo(
+    () => (activePatient?.screenings || []).find(s => s.status === 'graded') || null,
+    [activePatient]
+  );
+
+  const openLatestInStudio = () => {
+    if (latestGradedScreening && onSelectCase) onSelectCase(latestGradedScreening);
+  };
+  const openLatestReport = () => {
+    if (latestGradedScreening && onOpenReport) onOpenReport(latestGradedScreening);
+  };
+
   const historyRecords = useMemo(() => {
     const screenings = (activePatient?.screenings || [])
       .filter(s => s.status === 'graded')
@@ -335,12 +360,22 @@ export default function PatientHistory({
 
                   <div className="profile-actions-right">
                     {onSelectCase && (
-                      <button className="btn-primary btn-sm" onClick={() => onSelectCase(activePatient)}>
+                      <button
+                        className="btn-primary btn-sm"
+                        onClick={openLatestInStudio}
+                        disabled={!latestGradedScreening}
+                        title={latestGradedScreening ? 'Open the latest graded screening in the Retinal Studio' : 'No graded screening available yet for this patient'}
+                      >
                         <Eye size={14} /> Retinal Studio
                       </button>
                     )}
                     {onOpenReport && (
-                      <button className="btn-secondary btn-sm" onClick={() => onOpenReport(activePatient)}>
+                      <button
+                        className="btn-secondary btn-sm"
+                        onClick={openLatestReport}
+                        disabled={!latestGradedScreening}
+                        title={latestGradedScreening ? 'Open the PDF report for the latest graded screening' : 'No graded screening available yet for this patient'}
+                      >
                         <Printer size={14} /> PDF Report
                       </button>
                     )}
@@ -507,13 +542,19 @@ export default function PatientHistory({
           {/* TAB 2: Simple Patient Result Card */}
           {activeTab === 'result_card' && (
             <div className="result-card-tab-workspace">
-              <PatientResultCard 
-                caseData={activePatient}
-                onViewStudio={onSelectCase}
-                onOpenReport={onOpenReport}
-                onViewHistory={() => setActiveTab('timeline')}
-                selectedLanguage={selectedLanguage}
-              />
+              {latestGradedScreening ? (
+                <PatientResultCard 
+                  caseData={latestGradedScreening}
+                  onViewStudio={onSelectCase}
+                  onOpenReport={onOpenReport}
+                  onViewHistory={() => setActiveTab('timeline')}
+                  selectedLanguage={selectedLanguage}
+                />
+              ) : (
+                <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+                  No graded screening recorded for this patient yet.
+                </div>
+              )}
             </div>
           )}
 

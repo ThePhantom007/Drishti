@@ -10,10 +10,13 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser,
   const [patientEye, setPatientEye] = useState('OD'); // OD: Right, OS: Left
   const [patientAge, setPatientAge] = useState('54');
   const [patientGender, setPatientGender] = useState('Male');
+  const [patientPhone, setPatientPhone] = useState('');
   const [phcCenter, setPhcCenter] = useState('PHC Wardha Rural');
   const [hba1c, setHba1c] = useState('');
   const [bpSystolic, setBpSystolic] = useState('');
   const [bpDiastolic, setBpDiastolic] = useState('');
+  const [diabetesType, setDiabetesType] = useState('');
+  const [diabetesDiagnosedYear, setDiabetesDiagnosedYear] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [error, setError] = useState(null);
@@ -50,10 +53,13 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser,
           external_id: externalId,
           age: patientAge ? Number(patientAge) : null,
           sex: patientGender === 'Male' ? 'M' : patientGender === 'Female' ? 'F' : 'O',
+          phone: patientPhone || null,
           preferred_language: selectedLanguage,
           district: phcCenter.replace('PHC ', '').replace(' Rural', '').replace(' Center', '').replace(' Tele-Clinic', ''),
           facility_id: phcCenter,
           registered_by: currentUser?.username || 'unknown',
+          diabetes_type: diabetesType || null,
+          diabetes_diagnosed_year: diabetesDiagnosedYear ? Number(diabetesDiagnosedYear) : null,
         }),
       });
 
@@ -106,9 +112,15 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser,
           phc: phcCenter,
           eye: patientEye,
           registered_by: patient.registered_by,
-          clinical_data: (hba1c || (bpSystolic && bpDiastolic)) ? {
+          clinical_data: (hba1c || (bpSystolic && bpDiastolic) || diabetesDiagnosedYear) ? {
             hba1c: hba1c ? `${hba1c}%` : null,
             blood_pressure: (bpSystolic && bpDiastolic) ? `${bpSystolic}/${bpDiastolic} mmHg` : null,
+            // Mirrors the backend's own calculation (current year minus
+            // diagnosis year) so the optimistic UI update matches what a
+            // subsequent GET /api/patients/{id} will return.
+            diabetes_duration: diabetesDiagnosedYear
+              ? `${diabetesType || 'Diabetes'} (${new Date().getFullYear() - Number(diabetesDiagnosedYear)} yrs)`
+              : null,
           } : null,
           explainability: data.explainability ? {
             ...data.explainability,
@@ -215,6 +227,17 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser,
               </div>
             </div>
 
+            <div className="form-group">
+              <label>Patient Phone Number <span className="text-xs text-muted">for SMS recalls</span></label>
+              <input
+                type="tel"
+                value={patientPhone}
+                onChange={(e) => setPatientPhone(e.target.value)}
+                placeholder="e.g. 9876543210"
+                className="input-control"
+              />
+            </div>
+
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
               <label>Originating District PHC Center</label>
               <select 
@@ -268,6 +291,32 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser,
                   style={{ width: '100px' }}
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label>Diabetes Type <span className="text-xs text-muted">optional</span></label>
+              <select
+                value={diabetesType}
+                onChange={(e) => setDiabetesType(e.target.value)}
+                className="input-control"
+              >
+                <option value="">Not recorded</option>
+                <option value="Type 1">Type 1</option>
+                <option value="Type 2">Type 2</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Year Diagnosed With Diabetes <span className="text-xs text-muted">optional -- duration is calculated from this</span></label>
+              <input
+                type="number"
+                min="1950"
+                max={new Date().getFullYear()}
+                value={diabetesDiagnosedYear}
+                onChange={(e) => setDiabetesDiagnosedYear(e.target.value)}
+                placeholder={`e.g. ${new Date().getFullYear() - 10}`}
+                className="input-control"
+              />
             </div>
           </div>
 

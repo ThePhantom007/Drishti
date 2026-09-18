@@ -331,10 +331,13 @@ def get_patient_screenings(
 
 
 def _patient_out(patient: Patient) -> PatientOut:
+    duration_years, duration_label = _diabetes_duration_label(patient)
     return PatientOut(
         id=patient.id, name=patient.name, external_id=patient.external_id, age=patient.age,
         sex=patient.sex, phone=patient.phone, preferred_language=patient.preferred_language,
         facility_id=patient.facility_id, district=patient.district, registered_by=patient.registered_by,
+        diabetes_type=patient.diabetes_type, diabetes_diagnosed_year=patient.diabetes_diagnosed_year,
+        diabetes_duration_years=duration_years, diabetes_duration_label=duration_label,
         created_at=patient.created_at, screening_count=len(patient.screenings),
     )
 
@@ -405,12 +408,36 @@ def _notification_out(n: Notification, read_ids: set[str]) -> NotificationOut:
     )
 
 
-def _clinical_data_out(s: Screening) -> Optional[ClinicalDataOut]:
+def _diabetes_duration_label(patient: Optional[Patient]) -> tuple[Optional[int], Optional[str]]:
+    """Computes diabetes duration fresh from the patient's self-reported
+    diagnosis year, rather than reading a fixed string that would go stale
+    the moment it was written (e.g. a patient registered in 2024 as
+    "11 yrs" would still say "11 yrs" two years later). Returns
+    (years, label) -- both None if no diagnosis year was ever recorded, so
+    the frontend can fall back to its own "not recorded" placeholder
+    instead of this endpoint fabricating a number.
+
+    Note: this is a calculation from a self-reported date, not a
+    prediction from the fundus image or the DR grading model -- there is
+    no dataset or trained model in this project that estimates diabetes
+    duration from a retinal photo, and building one would be a
+    substantial separate ML effort (it would need photos labeled with
+    verified diabetes-duration ground truth, which DRISHTI's training
+    pipeline does not have)."""
+    if not patient or not patient.diabetes_diagnosed_year:
+        return None, None
+    years = max(dt.datetime.utcnow().year - patient.diabetes_diagnosed_year, 0)
+    type_label = patient.diabetes_type or "Diabetes"
+    return years, f"{type_label} ({years} yr{'s' if years != 1 else ''})"
+
+
+def _clinical_data_out(s: Screening, patient: Optional[Patient] = None) -> Optional[ClinicalDataOut]:
     """Builds the display-ready clinical vitals block for a screening, or
     None if nothing was ever recorded for it -- letting the frontend fall
     back to its own placeholder text ('Not recorded') rather than this
     endpoint inventing a fake reading."""
-    if s.hba1c_pct is None and s.bp_systolic is None and s.bp_diastolic is None:
+    _, duration_label = _diabetes_duration_label(patient)
+    if s.hba1c_pct is None and s.bp_systolic is None and s.bp_diastolic is None and duration_label is None:
         return None
     return ClinicalDataOut(
         hba1c=f"{s.hba1c_pct:.1f}%" if s.hba1c_pct is not None else None,
@@ -420,6 +447,7 @@ def _clinical_data_out(s: Screening) -> Optional[ClinicalDataOut]:
             if s.bp_systolic is not None and s.bp_diastolic is not None else None
         ),
         bp_systolic=s.bp_systolic, bp_diastolic=s.bp_diastolic,
+        diabetes_duration=duration_label,
     )
 
 
@@ -444,7 +472,7 @@ def _screening_summary(s: Screening, patient: Optional[Patient] = None) -> Scree
         sex=patient.sex if patient else None,
         district=patient.district if patient else None,
         date=s.created_at.date().isoformat() if s.created_at else None,
-        clinical_data=_clinical_data_out(s),
+        clinical_data=_clinical_data_out(s, patient),
         eye=s.eye,
         status=s.status, icdr_level=s.icdr_level, icdr_label=s.icdr_label,
         effective_icdr_level=s.effective_icdr_level, referable=s.referable, confidence=s.confidence,

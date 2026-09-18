@@ -12,10 +12,19 @@ export default function ScreeningPortal({ onCaseAdded, selectedLanguage = 'hi', 
   const [age, setAge] = useState('54');
   const [sex, setSex] = useState('M');
   const [eye, setEye] = useState('OD');
-  const [district, setDistrict] = useState('Nanded');
+  const [phone, setPhone] = useState('');
+  // Previously `district` had no input control anywhere in this form at
+  // all -- it was declared, defaulted to 'Nanded', and silently sent to
+  // the backend unchanged no matter where the patient actually was. Now a
+  // proper PHC dropdown (matching the one in the "ASHA Scan" upload
+  // modal) drives it, and `district` itself is derived from the PHC
+  // selection the same way that modal does.
+  const [phcCenter, setPhcCenter] = useState('PHC Nanded Rural');
   const [hba1c, setHba1c] = useState('');
   const [bpSystolic, setBpSystolic] = useState('');
   const [bpDiastolic, setBpDiastolic] = useState('');
+  const [diabetesType, setDiabetesType] = useState('');
+  const [diabetesDiagnosedYear, setDiabetesDiagnosedYear] = useState('');
   const [preferredLang, setPreferredLang] = useState(selectedLanguage);
   const [resultCardView, setResultCardView] = useState(false);
   
@@ -63,9 +72,13 @@ export default function ScreeningPortal({ onCaseAdded, selectedLanguage = 'hi', 
           external_id: externalId,
           age: age ? Number(age) : null,
           sex,
+          phone: phone || null,
           preferred_language: preferredLang,
-          district,
+          district: phcCenter.replace('PHC ', '').replace(' Rural', '').replace(' Center', '').replace(' Tele-Clinic', ''),
+          facility_id: phcCenter,
           registered_by: currentUser?.username || 'unknown',
+          diabetes_type: diabetesType || null,
+          diabetes_diagnosed_year: diabetesDiagnosedYear ? Number(diabetesDiagnosedYear) : null,
         }),
       });
 
@@ -106,12 +119,16 @@ export default function ScreeningPortal({ onCaseAdded, selectedLanguage = 'hi', 
           age: age ? Number(age) : null,
           sex,
           date: new Date().toISOString().slice(0, 10),
-          district,
+          district: phcCenter.replace('PHC ', '').replace(' Rural', '').replace(' Center', '').replace(' Tele-Clinic', ''),
+          phc: phcCenter,
           eye,
           registered_by: currentUser?.username || 'unknown',
-          clinical_data: (hba1c || (bpSystolic && bpDiastolic)) ? {
+          clinical_data: (hba1c || (bpSystolic && bpDiastolic) || diabetesDiagnosedYear) ? {
             hba1c: hba1c ? `${hba1c}%` : null,
             blood_pressure: (bpSystolic && bpDiastolic) ? `${bpSystolic}/${bpDiastolic} mmHg` : null,
+            diabetes_duration: diabetesDiagnosedYear
+              ? `${diabetesType || 'Diabetes'} (${new Date().getFullYear() - Number(diabetesDiagnosedYear)} yrs)`
+              : null,
           } : null,
         });
       }
@@ -180,6 +197,21 @@ export default function ScreeningPortal({ onCaseAdded, selectedLanguage = 'hi', 
               </div>
             </div>
 
+            <div className="form-group">
+              <label>Patient Phone Number <span className="text-xs text-muted">for SMS recalls</span></label>
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 9876543210" className="input-control" />
+            </div>
+
+            <div className="form-group">
+              <label>Originating District PHC Center</label>
+              <select value={phcCenter} onChange={(e) => setPhcCenter(e.target.value)} className="input-control">
+                <option value="PHC Nanded Rural">PHC Nanded Rural</option>
+                <option value="PHC Wardha Rural">PHC Wardha Rural</option>
+                <option value="PHC Yavatmal Center">PHC Yavatmal Center</option>
+                <option value="PHC Amravati Tele-Clinic">PHC Amravati Tele-Clinic</option>
+              </select>
+            </div>
+
             <div className="form-group mt-3">
               <label>Upload Fundus Photograph (JPEG/PNG)</label>
               <input type="file" accept="image/png, image/jpeg" onChange={handleFileChange} className="input-control" />
@@ -197,6 +229,28 @@ export default function ScreeningPortal({ onCaseAdded, selectedLanguage = 'hi', 
                 <span>/</span>
                 <input type="number" min="0" max="200" value={bpDiastolic} onChange={(e) => setBpDiastolic(e.target.value)} placeholder="Diastolic" className="input-control" style={{ width: '100px' }} />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label>Diabetes Type <span className="text-xs text-muted">optional</span></label>
+              <select value={diabetesType} onChange={(e) => setDiabetesType(e.target.value)} className="input-control">
+                <option value="">Not recorded</option>
+                <option value="Type 1">Type 1</option>
+                <option value="Type 2">Type 2</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Year Diagnosed With Diabetes <span className="text-xs text-muted">optional -- duration is calculated from this</span></label>
+              <input
+                type="number"
+                min="1950"
+                max={new Date().getFullYear()}
+                value={diabetesDiagnosedYear}
+                onChange={(e) => setDiabetesDiagnosedYear(e.target.value)}
+                placeholder={`e.g. ${new Date().getFullYear() - 10}`}
+                className="input-control"
+              />
             </div>
           </div>
 

@@ -101,6 +101,12 @@ class PatientCreate(BaseModel):
     facility_id: Optional[str] = None
     district: Optional[str] = None
     registered_by: Optional[str] = None
+    # Self-reported, captured once -- diabetes_duration is then computed
+    # fresh from diabetes_diagnosed_year wherever it's displayed (see
+    # PatientOut.diabetes_duration_label / ClinicalDataOut.diabetes_duration)
+    # rather than stored as a string that immediately starts going stale.
+    diabetes_type: Optional[str] = None
+    diabetes_diagnosed_year: Optional[int] = Field(None, ge=1900, le=2100)
 
 
 class PatientUpdate(BaseModel):
@@ -117,6 +123,8 @@ class PatientUpdate(BaseModel):
     preferred_language: Optional[str] = None
     facility_id: Optional[str] = None
     district: Optional[str] = None
+    diabetes_type: Optional[str] = None
+    diabetes_diagnosed_year: Optional[int] = Field(None, ge=1900, le=2100)
 
 
 class PatientOut(BaseModel):
@@ -130,6 +138,11 @@ class PatientOut(BaseModel):
     facility_id: Optional[str]
     district: Optional[str]
     registered_by: Optional[str]
+    diabetes_type: Optional[str] = None
+    diabetes_diagnosed_year: Optional[int] = None
+    # Computed, not stored -- see _diabetes_duration_label in main.py.
+    diabetes_duration_years: Optional[int] = None
+    diabetes_duration_label: Optional[str] = None
     created_at: dt.datetime
     screening_count: int = 0
 
@@ -157,6 +170,10 @@ class ClinicalDataOut(BaseModel):
     blood_pressure: Optional[str] = None
     bp_systolic: Optional[int] = None
     bp_diastolic: Optional[int] = None
+    # e.g. "Type 2 (14 yrs)" -- computed from the patient's
+    # diabetes_diagnosed_year at read time (see _diabetes_duration_label),
+    # not stored as a frozen string.
+    diabetes_duration: Optional[str] = None
 
 
 class ScreeningSummary(BaseModel):
