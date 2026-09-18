@@ -63,6 +63,20 @@ export function withAuthToken(url) {
   return `${url}${separator}token=${encodeURIComponent(token)}`;
 }
 
+/** Turns a report/screening media URL from the backend (e.g.
+ * "/api/screenings/abc123/original") into something an <img>/<a>/<audio>
+ * tag can actually load: absolute (API_BASE_URL-prefixed) and carrying
+ * the auth token as a query param, since those tags can't send a custom
+ * Authorization header the way authFetch() can. Already-absolute URLs
+ * (http(s):, blob:, data:) are passed through untouched -- those come
+ * from the mock dataset or a local file preview, not the API, and don't
+ * need a token. */
+export function resolveMediaUrl(url) {
+  if (!url) return url;
+  if (/^(https?:|blob:|data:)/i.test(url)) return url;
+  return withAuthToken(`${API_BASE_URL}${url}`);
+}
+
 export async function apiRegister({ username, password, fullName, role, facilityId, district }) {
   const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
     method: 'POST',

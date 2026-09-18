@@ -115,7 +115,7 @@ export default function ReportModal({ isOpen, onClose, caseData, selectedLanguag
             <h4 className="section-heading">1. Patient Demographic & Medical History</h4>
             <div className="report-patient-grid">
               <div><span className="label">Patient MRN:</span> <strong>{patientId}</strong></div>
-              <div><span className="label">Age / Sex:</span> <strong>{caseData.age || '56'} yrs / {caseData.gender || caseData.sex === 'M' ? 'Male' : 'Female'}</strong></div>
+              <div><span className="label">Age / Sex:</span> <strong>{caseData.age || '56'} yrs / {caseData.sex === 'F' || caseData.gender === 'Female' ? 'Female' : caseData.sex === 'M' || caseData.gender === 'Male' ? 'Male' : (caseData.gender || 'Female')}</strong></div>
               <div><span className="label">Eye Evaluated:</span> <strong>{eye === 'OD' ? 'OD (Right Eye)' : 'OS (Left Eye)'}</strong></div>
               <div><span className="label">Diabetes Duration:</span> <strong>{caseData.clinicalData?.diabetesDuration || caseData.clinical_data?.diabetes_duration || '10 years'}</strong></div>
               <div><span className="label">HbA1c Level:</span> <strong>{caseData.clinicalData?.hba1c || caseData.clinical_data?.hba1c || '8.2%'}</strong></div>

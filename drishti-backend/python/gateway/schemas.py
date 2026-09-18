@@ -46,6 +46,7 @@ class LesionInfo(BaseModel):
 class ExplainabilityInfo(BaseModel):
     gradcam_image_url: str
     annotated_image_url: str
+    original_image_url: Optional[str] = None  # None if the original photo wasn't persisted (e.g. an old row)
 
 
 class ReportInfo(BaseModel):
@@ -102,6 +103,22 @@ class PatientCreate(BaseModel):
     registered_by: Optional[str] = None
 
 
+class PatientUpdate(BaseModel):
+    """PATCH /api/patients/{patient_id} -- every field optional, and only
+    the fields actually present in the request body get changed (see
+    `exclude_unset` on the route). Lets the ASHA/doctor correct a
+    demographic that was wrong or incomplete at registration, instead of
+    the record being stuck with whatever was typed in the first time."""
+    name: Optional[str] = None
+    external_id: Optional[str] = None
+    age: Optional[int] = Field(None, ge=0, le=130)
+    sex: Optional[str] = None
+    phone: Optional[str] = None
+    preferred_language: Optional[str] = None
+    facility_id: Optional[str] = None
+    district: Optional[str] = None
+
+
 class PatientOut(BaseModel):
     id: str
     name: Optional[str]
@@ -120,12 +137,45 @@ class PatientOut(BaseModel):
         from_attributes = True
 
 
+class ClinicalVitalsUpdate(BaseModel):
+    """PATCH /api/screenings/{screening_id}/vitals payload. All optional --
+    only the fields present get changed -- so a doctor filling in HbA1c
+    alone during review doesn't clobber a blood pressure reading someone
+    else already entered."""
+    hba1c_pct: Optional[float] = Field(None, ge=0, le=20)
+    bp_systolic: Optional[int] = Field(None, ge=0, le=300)
+    bp_diastolic: Optional[int] = Field(None, ge=0, le=200)
+
+
+class ClinicalDataOut(BaseModel):
+    """Display-ready clinical vitals for a screening -- pre-formatted
+    ('8.4%', '135/85 mmHg') to match what the frontend already renders,
+    but now backed by real per-screening values instead of a hardcoded
+    fallback string baked into the component."""
+    hba1c: Optional[str] = None
+    hba1c_pct: Optional[float] = None
+    blood_pressure: Optional[str] = None
+    bp_systolic: Optional[int] = None
+    bp_diastolic: Optional[int] = None
+
+
 class ScreeningSummary(BaseModel):
     """A lighter-weight screening representation for lists (patient history,
     review queue) -- the full ScreeningResponse is for a single fresh result."""
     screening_id: str
     patient_id: str
     patient_name: Optional[str] = None
+    # Demographics/vitals below are read from the linked Patient/Screening
+    # rows (see main._screening_summary) -- previously absent from this
+    # model entirely, which is *why* the review queue and case detail view
+    # always showed the same hardcoded placeholder age/date/HbA1c/BP no
+    # matter which patient was actually selected: the real values never
+    # made it into the API response for the frontend to display.
+    age: Optional[int] = None
+    sex: Optional[str] = None
+    district: Optional[str] = None
+    date: Optional[str] = None  # ISO date (YYYY-MM-DD) the screening was taken
+    clinical_data: Optional[ClinicalDataOut] = None
     eye: Optional[str] = None
     status: str
     icdr_level: Optional[int] = None
@@ -147,6 +197,7 @@ class ScreeningSummary(BaseModel):
     pdf_url: Optional[str] = None
     annotated_image_url: Optional[str] = None
     gradcam_image_url: Optional[str] = None
+    original_image_url: Optional[str] = None
 
 
 class PatientDetail(PatientOut):

@@ -33,6 +33,17 @@ class Settings(BaseModel):
     pipeline_config_path: Path = REPO_ROOT / "config" / "pipeline_config.yaml"
     reports_dir: Path = REPO_ROOT / "output" / "reports"
     upload_tmp_dir: Path = REPO_ROOT / "output" / "uploads"
+    # The original fundus photo the ASHA/doctor actually captured/uploaded.
+    # Previously this was written to upload_tmp_dir and deleted again as
+    # soon as the pipeline finished, so nothing ever backed the "Original
+    # Fundus" tab in the review studio -- it only ever worked for the one
+    # in-memory response right after a screening was taken, and vanished
+    # (silently falling back to a stock placeholder photo) the moment that
+    # case was reopened from the queue or patient history. Kept as its own
+    # directory, separate from reports_dir, since a screening can have an
+    # original image even when it's rejected (no report_id is ever minted
+    # for a rejected screening).
+    originals_dir: Path = REPO_ROOT / "output" / "originals"
     max_upload_size_mb: int = 15
     allowed_content_types: tuple[str, ...] = ("image/jpeg", "image/png")
     model_version: str = os.environ.get("MODEL_VERSION", "dev")
@@ -63,3 +74,4 @@ class Settings(BaseModel):
 settings = Settings()
 settings.reports_dir.mkdir(parents=True, exist_ok=True)
 settings.upload_tmp_dir.mkdir(parents=True, exist_ok=True)
+settings.originals_dir.mkdir(parents=True, exist_ok=True)

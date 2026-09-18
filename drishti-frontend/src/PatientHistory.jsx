@@ -32,9 +32,8 @@ import {
   getPHC,
   SUPPORTED_LANGUAGES,
   getLocalizedSummary,
-  API_BASE_URL,
   authFetch,
-  withAuthToken
+  resolveMediaUrl
 } from './api';
 import PatientResultCard from './PatientResultCard';
 
@@ -136,8 +135,8 @@ export default function PatientHistory({
       icdr_level: s.icdr_level ?? 0,
       icdr_label: s.icdr_label || 'No DR',
       referable: !!s.referable,
-      hba1c: 'Not recorded',
-      blood_pressure: 'Not recorded',
+      hba1c: s.clinical_data?.hba1c || 'Not recorded',
+      blood_pressure: s.clinical_data?.blood_pressure || 'Not recorded',
       microaneurysms: s.microaneurysm_count ?? '—',
       hemorrhages: s.hemorrhage_count ?? '—',
       grading_paths: s.grading_paths,
@@ -146,7 +145,8 @@ export default function PatientHistory({
         : (s.review_status === 'confirmed' ? 'Ophthalmologist confirmed the AI grade.'
           : s.review_status === 'overridden' ? 'Ophthalmologist overrode the AI grade on review.'
           : 'Awaiting or not requiring ophthalmologist review.'),
-      imageUrl: s.annotated_image_url ? withAuthToken(`${API_BASE_URL}${s.annotated_image_url}`) : null,
+      imageUrl: s.annotated_image_url ? resolveMediaUrl(s.annotated_image_url) : null,
+      originalImageUrl: s.original_image_url ? resolveMediaUrl(s.original_image_url) : null,
     }));
   }, [activePatient]);
 

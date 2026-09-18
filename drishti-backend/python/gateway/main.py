@@ -33,6 +33,8 @@ from schemas import (
     AnalyticsSummary,
     AnalyticsTrend,
     AuthResponse,
+    ClinicalDataOut,
+    ClinicalVitalsUpdate,
     DistrictBreakdown,
     ErrorResponse,
     ExplainabilityInfo,
@@ -48,6 +50,7 @@ from schemas import (
     PatientDetail,
     PatientList,
     PatientOut,
+    PatientUpdate,
     QualityInfo,
     QueueItem,
     RegisterRequest,
@@ -283,8 +286,34 @@ def get_patient(
         raise HTTPException(status_code=403, detail="You can only view patients you registered yourself.")
     return PatientDetail(
         **_patient_out(patient).model_dump(),
-        screenings=[_screening_summary(s, patient.name) for s in patient.screenings],
+        screenings=[_screening_summary(s, patient) for s in patient.screenings],
     )
+
+
+@app.patch("/api/patients/{patient_id}", response_model=PatientOut)
+def update_patient(
+    patient_id: str,
+    payload: PatientUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ASHA, UserRole.DOCTOR, UserRole.ADMIN)),
+):
+    """Corrects/completes a patient's demographic record after registration
+    -- e.g. an age or district typed wrong at intake, or filled in later.
+    Only the fields actually present in the request body are changed
+    (`exclude_unset`), so a client can PATCH just {"age": 56} without
+    needing to resend every other field first."""
+    patient = db.get(Patient, patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    if current_user.role == UserRole.ASHA and patient.registered_by != current_user.username:
+        raise HTTPException(status_code=403, detail="You can only update patients you registered yourself.")
+
+    updates = payload.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        setattr(patient, field, value)
+    db.commit()
+    db.refresh(patient)
+    return _patient_out(patient)
 
 
 @app.get("/api/patients/{patient_id}/screenings", response_model=list[ScreeningSummary])
@@ -298,7 +327,7 @@ def get_patient_screenings(
         raise HTTPException(status_code=404, detail="Patient not found")
     if current_user.role == UserRole.ASHA and patient.registered_by != current_user.username:
         raise HTTPException(status_code=403, detail="You can only view patients you registered yourself.")
-    return [_screening_summary(s, patient.name) for s in patient.screenings]
+    return [_screening_summary(s, patient) for s in patient.screenings]
 
 
 def _patient_out(patient: Patient) -> PatientOut:
@@ -376,7 +405,25 @@ def _notification_out(n: Notification, read_ids: set[str]) -> NotificationOut:
     )
 
 
-def _screening_summary(s: Screening, patient_name: Optional[str] = None) -> ScreeningSummary:
+def _clinical_data_out(s: Screening) -> Optional[ClinicalDataOut]:
+    """Builds the display-ready clinical vitals block for a screening, or
+    None if nothing was ever recorded for it -- letting the frontend fall
+    back to its own placeholder text ('Not recorded') rather than this
+    endpoint inventing a fake reading."""
+    if s.hba1c_pct is None and s.bp_systolic is None and s.bp_diastolic is None:
+        return None
+    return ClinicalDataOut(
+        hba1c=f"{s.hba1c_pct:.1f}%" if s.hba1c_pct is not None else None,
+        hba1c_pct=s.hba1c_pct,
+        blood_pressure=(
+            f"{s.bp_systolic}/{s.bp_diastolic} mmHg"
+            if s.bp_systolic is not None and s.bp_diastolic is not None else None
+        ),
+        bp_systolic=s.bp_systolic, bp_diastolic=s.bp_diastolic,
+    )
+
+
+def _screening_summary(s: Screening, patient: Optional[Patient] = None) -> ScreeningSummary:
     grading_paths = None
     if s.rule_based_icdr_level is not None and s.icdr_level is not None:
         grading_paths = GradingPaths(
@@ -387,7 +434,18 @@ def _screening_summary(s: Screening, patient_name: Optional[str] = None) -> Scre
             disagreement=bool(s.grading_disagreement),
         )
     return ScreeningSummary(
-        screening_id=s.id, patient_id=s.patient_id, patient_name=patient_name, eye=s.eye,
+        screening_id=s.id, patient_id=s.patient_id,
+        patient_name=patient.name if patient else None,
+        # These three used to be entirely absent from this model, which is
+        # why the queue/case-detail views always showed a hardcoded
+        # placeholder no matter which patient was actually open -- the real
+        # values never reached the frontend.
+        age=patient.age if patient else None,
+        sex=patient.sex if patient else None,
+        district=patient.district if patient else None,
+        date=s.created_at.date().isoformat() if s.created_at else None,
+        clinical_data=_clinical_data_out(s),
+        eye=s.eye,
         status=s.status, icdr_level=s.icdr_level, icdr_label=s.icdr_label,
         effective_icdr_level=s.effective_icdr_level, referable=s.referable, confidence=s.confidence,
         requires_human_review=bool(s.requires_human_review), review_status=s.review_status.value,
@@ -399,18 +457,52 @@ def _screening_summary(s: Screening, patient_name: Optional[str] = None) -> Scre
         pdf_url=f"/api/reports/{s.report_id}/report.pdf" if s.report_id else None,
         annotated_image_url=f"/api/reports/{s.report_id}/annotated.png" if s.report_id else None,
         gradcam_image_url=f"/api/reports/{s.report_id}/heatmap.png" if s.report_id else None,
+        original_image_url=f"/api/screenings/{s.id}/original" if s.original_image_ext else None,
     )
 
 
 # ============================================================================
 # Screening (core pipeline call)
 # ============================================================================
+def _resolve_image_ext(image: UploadFile) -> str:
+    """Best-effort file extension for the permanently-stored original photo
+    -- prefers the uploaded filename's own extension, falling back to the
+    declared content type, and finally to .jpg. Only ever produces one of
+    the extensions the gateway already accepts for upload."""
+    ext = Path(image.filename or "").suffix.lower()
+    if ext in (".jpg", ".jpeg", ".png"):
+        return ext
+    return ".png" if image.content_type == "image/png" else ".jpg"
+
+
+def _persist_original_image(tmp_path: Path, screening: Screening, ext: str, db: Session) -> None:
+    """Copies the already-uploaded temp file into permanent storage keyed
+    by the now-known screening.id, and records the extension on the row so
+    GET /api/screenings/{id}/original can find it again later. Called only
+    after the screening row has a real id (i.e. after the first commit),
+    since the on-disk filename depends on it."""
+    dest = settings.originals_dir / f"{screening.id}{ext}"
+    try:
+        shutil.copyfile(tmp_path, dest)
+    except OSError:
+        logger.exception("Failed to persist original image for screening %s", screening.id)
+        return
+    screening.original_image_ext = ext
+    db.commit()
+
+
 @app.post("/api/screen")
 async def screen(
     image: UploadFile = File(...),
     patient_id: Optional[str] = Form(None),
     eye: Optional[str] = Form(None),
     language: Optional[str] = Form(None),
+    # Point-of-care vitals -- optional so existing callers/tests that don't
+    # send them keep working, but this is what UploadModal now sends
+    # instead of the frontend fabricating a placeholder reading.
+    hba1c_pct: Optional[float] = Form(None),
+    bp_systolic: Optional[int] = Form(None),
+    bp_diastolic: Optional[int] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(UserRole.ASHA, UserRole.DOCTOR, UserRole.ADMIN)),
 ):
@@ -442,16 +534,21 @@ async def screen(
         result = matlab_bridge.run_screening_pipeline(str(tmp_path))
     except Exception as exc:  # noqa: BLE001
         logger.exception("Pipeline execution failed")
+        tmp_path.unlink(missing_ok=True)
         raise HTTPException(
             status_code=500,
             detail=ErrorResponse(
                 status="error", error_code="pipeline_failure", message=str(exc)
             ).model_dump(),
         ) from exc
-    finally:
-        tmp_path.unlink(missing_ok=True)
+    # tmp_path is deliberately NOT deleted here (a prior version deleted it
+    # in a `finally` right at this point) -- it's still needed below to
+    # persist the original photo to originals_dir once a screening row
+    # (and therefore an id to name the file after) exists. It's cleaned up
+    # after that, on every path out of this function from here on.
 
     resolved_lang = language or patient.preferred_language or "en"
+    image_ext = _resolve_image_ext(image)
 
     if result["status"] == "rejected":
         screening = Screening(
@@ -461,8 +558,11 @@ async def screen(
             illumination_score=result["quality"]["illumination_score"],
             field_of_view_score=result["quality"]["field_of_view_score"],
             review_status=ReviewStatus.NOT_REQUIRED,
+            hba1c_pct=hba1c_pct, bp_systolic=bp_systolic, bp_diastolic=bp_diastolic,
         )
         db.add(screening); db.commit(); db.refresh(screening)
+        _persist_original_image(tmp_path, screening, image_ext, db)
+        tmp_path.unlink(missing_ok=True)
         return RejectedResponse(
             status="rejected", screening_id=screening.id,
             quality=QualityInfo(**result["quality"]),
@@ -489,8 +589,11 @@ async def screen(
         neovascularization_detected=lesions["neovascularization_detected"],
         report_id=report["report_id"], summary_text=report["summary_text"], language=resolved_lang,
         processing_time_ms=result["processing_time_ms"], review_status=review_status,
+        hba1c_pct=hba1c_pct, bp_systolic=bp_systolic, bp_diastolic=bp_diastolic,
     )
     db.add(screening); db.commit(); db.refresh(screening)
+    _persist_original_image(tmp_path, screening, image_ext, db)
+    tmp_path.unlink(missing_ok=True)
     _create_review_notification(db, screening, patient)
 
     audio_url = None
@@ -509,6 +612,7 @@ async def screen(
         explainability=ExplainabilityInfo(
             gradcam_image_url=f"/api/reports/{report['report_id']}/heatmap.png",
             annotated_image_url=f"/api/reports/{report['report_id']}/annotated.png",
+            original_image_url=f"/api/screenings/{screening.id}/original" if screening.original_image_ext else None,
         ),
         report=ReportInfo(
             report_id=report["report_id"],
@@ -536,6 +640,59 @@ def _check_report_access(db: Session, screening: Screening, user: User) -> None:
         patient = db.get(Patient, screening.patient_id)
         if not patient or patient.registered_by != user.username:
             raise HTTPException(status_code=403, detail="You can only view reports for patients you registered yourself.")
+
+
+@app.patch("/api/screenings/{screening_id}/vitals", response_model=ScreeningSummary)
+def update_screening_vitals(
+    screening_id: str,
+    payload: ClinicalVitalsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ASHA, UserRole.DOCTOR, UserRole.ADMIN)),
+):
+    """Records HbA1c / blood pressure for a screening -- captured by the
+    ASHA worker at the point of care (see UploadModal), or added/corrected
+    by the reviewing doctor if it was missing or wrong. Replaces the old
+    behaviour where these were never asked for at all and the frontend
+    just displayed the same hardcoded '8.4%' / '135/85 mmHg' for every
+    single case regardless of the actual patient."""
+    screening = db.get(Screening, screening_id)
+    if not screening:
+        raise HTTPException(status_code=404, detail="Screening not found")
+    patient = db.get(Patient, screening.patient_id)
+    if current_user.role == UserRole.ASHA and (not patient or patient.registered_by != current_user.username):
+        raise HTTPException(status_code=403, detail="You can only update screenings for patients you registered yourself.")
+
+    updates = payload.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        setattr(screening, field, value)
+    db.commit()
+    db.refresh(screening)
+    return _screening_summary(screening, patient)
+
+
+@app.get("/api/screenings/{screening_id}/original")
+def get_screening_original_image(
+    screening_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_flexible),
+):
+    """Serves the actual fundus photo as captured, now that it's persisted
+    to disk (see settings.originals_dir and the screen()/sync_offline_batch()
+    routes below) instead of being deleted the moment the pipeline finished
+    with it. Works for both graded and rejected screenings -- unlike the
+    /api/reports/* routes, it doesn't depend on a report_id, since a
+    rejected (recapture-needed) screening never gets one."""
+    screening = db.get(Screening, screening_id)
+    if not screening:
+        raise HTTPException(status_code=404, detail="Screening not found")
+    _check_report_access(db, screening, current_user)
+    if not screening.original_image_ext:
+        raise HTTPException(status_code=404, detail="No original image was stored for this screening.")
+    image_path = settings.originals_dir / f"{screening.id}{screening.original_image_ext}"
+    if not image_path.exists():
+        raise HTTPException(status_code=404, detail="Original image is recorded but missing on disk.")
+    media_type = "image/png" if screening.original_image_ext.lower() == ".png" else "image/jpeg"
+    return FileResponse(image_path, media_type=media_type)
 
 
 @app.get("/api/reports/{report_id}/report.pdf")
@@ -624,7 +781,7 @@ def get_review_queue(
         items = []
         for s in screenings:
             patient = db.get(Patient, s.patient_id)
-            summary = _screening_summary(s, patient.name if patient else None)
+            summary = _screening_summary(s, patient)
             lesion_bits = []
             if s.microaneurysm_count:
                 lesion_bits.append(f"{s.microaneurysm_count} microaneurysms")
@@ -808,6 +965,7 @@ async def sync_offline_batch(
 
     results: list[SyncItemResult] = []
     for image, local_id, patient_id, captured_at_str in zip(images, local_ids, patient_ids, captured_ats):
+        tmp_path = None
         try:
             patient = db.get(Patient, patient_id)
             if not patient:
@@ -818,10 +976,14 @@ async def sync_offline_batch(
             tmp_path = settings.upload_tmp_dir / f"{uuid.uuid4().hex}_{image.filename}"
             with tmp_path.open("wb") as f:
                 shutil.copyfileobj(image.file, f)
-            try:
-                result = matlab_bridge.run_screening_pipeline(str(tmp_path))
-            finally:
-                tmp_path.unlink(missing_ok=True)
+            # Unlike the old code, tmp_path is NOT deleted right after this --
+            # it's kept around (same as in screen() above) until it's been
+            # copied into permanent storage under a real screening.id, since
+            # this is the same "original image never persisted anywhere"
+            # bug that made the fundus photo never show up in the review
+            # studio for offline-synced (Android) screenings either.
+            result = matlab_bridge.run_screening_pipeline(str(tmp_path))
+            image_ext = _resolve_image_ext(image)
 
             try:
                 captured_at = dt.datetime.fromisoformat(captured_at_str)
@@ -834,6 +996,7 @@ async def sync_offline_batch(
                     review_status=ReviewStatus.NOT_REQUIRED, client_local_id=local_id, captured_at=captured_at,
                 )
                 db.add(screening); db.commit(); db.refresh(screening)
+                _persist_original_image(tmp_path, screening, image_ext, db)
                 results.append(SyncItemResult(client_local_id=local_id, status="rejected", screening_id=screening.id))
                 continue
 
@@ -856,6 +1019,7 @@ async def sync_offline_batch(
                 client_local_id=local_id, captured_at=captured_at,
             )
             db.add(screening); db.commit(); db.refresh(screening)
+            _persist_original_image(tmp_path, screening, image_ext, db)
             _create_review_notification(db, screening, db.get(Patient, patient_id))
             results.append(SyncItemResult(
                 client_local_id=local_id, status="graded", screening_id=screening.id,
@@ -864,5 +1028,8 @@ async def sync_offline_batch(
         except Exception as exc:  # noqa: BLE001
             logger.exception("Sync item %s failed", local_id)
             results.append(SyncItemResult(client_local_id=local_id, status="error", error_message=str(exc)))
+        finally:
+            if tmp_path is not None:
+                tmp_path.unlink(missing_ok=True)
 
     return SyncResponse(results=results)

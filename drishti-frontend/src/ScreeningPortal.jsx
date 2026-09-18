@@ -13,6 +13,9 @@ export default function ScreeningPortal({ onCaseAdded, selectedLanguage = 'hi', 
   const [sex, setSex] = useState('M');
   const [eye, setEye] = useState('OD');
   const [district, setDistrict] = useState('Nanded');
+  const [hba1c, setHba1c] = useState('');
+  const [bpSystolic, setBpSystolic] = useState('');
+  const [bpDiastolic, setBpDiastolic] = useState('');
   const [preferredLang, setPreferredLang] = useState(selectedLanguage);
   const [resultCardView, setResultCardView] = useState(false);
   
@@ -79,6 +82,13 @@ export default function ScreeningPortal({ onCaseAdded, selectedLanguage = 'hi', 
       formData.append('patient_id', patient.id);
       formData.append('eye', eye);
       formData.append('language', preferredLang);
+      // Real point-of-care vitals -- both optional, same as the Upload
+      // modal. Previously nothing captured these at all, so every case
+      // that reached the review queue showed the same hardcoded '8.4%' /
+      // '135/85 mmHg' regardless of the actual patient.
+      if (hba1c) formData.append('hba1c_pct', hba1c);
+      if (bpSystolic) formData.append('bp_systolic', bpSystolic);
+      if (bpDiastolic) formData.append('bp_diastolic', bpDiastolic);
 
       const response = await authFetch('/api/screen', {
         method: 'POST',
@@ -89,7 +99,21 @@ export default function ScreeningPortal({ onCaseAdded, selectedLanguage = 'hi', 
       setScreeningResult(data);
 
       if (data.status === 'graded' && onCaseAdded && data.grading?.requires_human_review) {
-        onCaseAdded(data);
+        onCaseAdded({
+          ...data,
+          patient_name: patientName,
+          external_id: externalId,
+          age: age ? Number(age) : null,
+          sex,
+          date: new Date().toISOString().slice(0, 10),
+          district,
+          eye,
+          registered_by: currentUser?.username || 'unknown',
+          clinical_data: (hba1c || (bpSystolic && bpDiastolic)) ? {
+            hba1c: hba1c ? `${hba1c}%` : null,
+            blood_pressure: (bpSystolic && bpDiastolic) ? `${bpSystolic}/${bpDiastolic} mmHg` : null,
+          } : null,
+        });
       }
     } catch (error) {
       console.error('Error submitting screening:', error);
@@ -160,6 +184,20 @@ export default function ScreeningPortal({ onCaseAdded, selectedLanguage = 'hi', 
               <label>Upload Fundus Photograph (JPEG/PNG)</label>
               <input type="file" accept="image/png, image/jpeg" onChange={handleFileChange} className="input-control" />
             </div>
+
+            <div className="form-group">
+              <label>HbA1c (%) <span className="text-xs text-muted">optional</span></label>
+              <input type="number" step="0.1" min="0" max="20" value={hba1c} onChange={(e) => setHba1c(e.target.value)} placeholder="e.g. 7.2" className="input-control" />
+            </div>
+
+            <div className="form-group">
+              <label>Blood Pressure (mmHg) <span className="text-xs text-muted">optional</span></label>
+              <div className="inline-inputs">
+                <input type="number" min="0" max="300" value={bpSystolic} onChange={(e) => setBpSystolic(e.target.value)} placeholder="Systolic" className="input-control" style={{ width: '100px' }} />
+                <span>/</span>
+                <input type="number" min="0" max="200" value={bpDiastolic} onChange={(e) => setBpDiastolic(e.target.value)} placeholder="Diastolic" className="input-control" style={{ width: '100px' }} />
+              </div>
+            </div>
           </div>
 
           <button type="button" className="btn-primary full-width mt-4" onClick={handleRunScreening} disabled={isProcessing || !selectedFile}>
@@ -208,7 +246,7 @@ export default function ScreeningPortal({ onCaseAdded, selectedLanguage = 'hi', 
 
                 {resultCardView ? (
                   <PatientResultCard 
-                    caseData={{...screeningResult, patient_name: patientName, patient_id: patientId, age, gender: sex, eye}}
+                    caseData={{...screeningResult, patient_name: patientName, patient_id: patientId, age, sex, eye}}
                     selectedLanguage={preferredLang}
                   />
                 ) : (

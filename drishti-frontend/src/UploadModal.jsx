@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UploadCloud, X, Sparkles, CheckCircle, Loader2, AlertTriangle } from 'lucide-react';
-import { authFetch, withAuthToken, API_BASE_URL } from './api';
+import { authFetch, resolveMediaUrl } from './api';
 
 export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser, selectedLanguage = 'en' }) {
   const [dragActive, setDragActive] = useState(false);
@@ -11,6 +11,9 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser,
   const [patientAge, setPatientAge] = useState('54');
   const [patientGender, setPatientGender] = useState('Male');
   const [phcCenter, setPhcCenter] = useState('PHC Wardha Rural');
+  const [hba1c, setHba1c] = useState('');
+  const [bpSystolic, setBpSystolic] = useState('');
+  const [bpDiastolic, setBpDiastolic] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [error, setError] = useState(null);
@@ -65,6 +68,15 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser,
       formData.append('patient_id', patient.id);
       formData.append('eye', patientEye);
       formData.append('language', selectedLanguage);
+      // Real point-of-care vitals -- captured here instead of the old
+      // behaviour of the review screen just displaying a hardcoded
+      // '8.4%' / '135/85 mmHg' for every single patient. Both optional:
+      // an ASHA worker without a working BP cuff/glucometer on hand can
+      // still submit the screening, and a doctor can fill these in later
+      // during review via PATCH /api/screenings/{id}/vitals.
+      if (hba1c) formData.append('hba1c_pct', hba1c);
+      if (bpSystolic) formData.append('bp_systolic', bpSystolic);
+      if (bpDiastolic) formData.append('bp_diastolic', bpDiastolic);
 
       const screenResponse = await authFetch('/api/screen', {
         method: 'POST',
@@ -89,18 +101,26 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser,
           external_id: patient.external_id,
           age: patient.age,
           sex: patient.sex,
+          date: new Date().toISOString().slice(0, 10),
           district: patient.district,
           phc: phcCenter,
           eye: patientEye,
           registered_by: patient.registered_by,
+          clinical_data: (hba1c || (bpSystolic && bpDiastolic)) ? {
+            hba1c: hba1c ? `${hba1c}%` : null,
+            blood_pressure: (bpSystolic && bpDiastolic) ? `${bpSystolic}/${bpDiastolic} mmHg` : null,
+          } : null,
           explainability: data.explainability ? {
             ...data.explainability,
             gradcam_image_url: data.explainability.gradcam_image_url
-              ? withAuthToken(`${API_BASE_URL}${data.explainability.gradcam_image_url}`)
+              ? resolveMediaUrl(data.explainability.gradcam_image_url)
               : null,
             annotated_image_url: data.explainability.annotated_image_url
-              ? withAuthToken(`${API_BASE_URL}${data.explainability.annotated_image_url}`)
+              ? resolveMediaUrl(data.explainability.annotated_image_url)
               : null,
+            original_image_url: data.explainability.original_image_url
+              ? resolveMediaUrl(data.explainability.original_image_url)
+              : previewUrl, // fall back to the just-uploaded local preview rather than a stock photo
           } : undefined,
         });
       }
@@ -207,6 +227,47 @@ export default function UploadModal({ isOpen, onClose, onCaseAdded, currentUser,
                 <option value="PHC Yavatmal Center">PHC Yavatmal Center</option>
                 <option value="PHC Amravati Tele-Clinic">PHC Amravati Tele-Clinic</option>
               </select>
+            </div>
+
+            <div className="form-group">
+              <label>HbA1c (%) <span className="text-xs text-muted">optional</span></label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="20"
+                value={hba1c}
+                onChange={(e) => setHba1c(e.target.value)}
+                placeholder="e.g. 7.2"
+                className="input-control"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Blood Pressure (mmHg) <span className="text-xs text-muted">optional</span></label>
+              <div className="inline-inputs">
+                <input
+                  type="number"
+                  min="0"
+                  max="300"
+                  value={bpSystolic}
+                  onChange={(e) => setBpSystolic(e.target.value)}
+                  placeholder="Systolic"
+                  className="input-control"
+                  style={{ width: '100px' }}
+                />
+                <span>/</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="200"
+                  value={bpDiastolic}
+                  onChange={(e) => setBpDiastolic(e.target.value)}
+                  placeholder="Diastolic"
+                  className="input-control"
+                  style={{ width: '100px' }}
+                />
+              </div>
             </div>
           </div>
 

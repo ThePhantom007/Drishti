@@ -25,7 +25,7 @@ import {
 import OverrideModal from './OverrideModal';
 import ReportModal from './ReportModal';
 import PatientResultCard from './PatientResultCard';
-import { getLocalizedSummary, playVoiceReadout, stopVoiceReadout, SUPPORTED_LANGUAGES, API_BASE_URL, authFetch, withAuthToken } from './api';
+import { getLocalizedSummary, playVoiceReadout, stopVoiceReadout, SUPPORTED_LANGUAGES, resolveMediaUrl, authFetch } from './api';
 
 export default function CaseDetail({ caseData, onBack, onUpdateCase, selectedLanguage = 'hi' }) {
   const [imageMode, setImageMode] = useState('original'); // 'original', 'gradcam', 'annotated', 'split'
@@ -76,11 +76,20 @@ export default function CaseDetail({ caseData, onBack, onUpdateCase, selectedLan
   const localizedSummary = getLocalizedSummary(caseData, currentLang);
   const currentLangObj = SUPPORTED_LANGUAGES.find(l => l.code === currentLang) || SUPPORTED_LANGUAGES[0];
 
-  // Medical fundus imagery with API URL fallbacks
+  // Medical fundus imagery: prefer the real backend-stored photo/overlays
+  // (both the nested `explainability.*` shape from a fresh POST /api/screen
+  // response, and the flat `*_image_url` shape a queue/patient-history item
+  // comes back as) and resolve relative "/api/..." paths to an absolute,
+  // auth-token-carrying URL the <img> tag can actually load. Only fall back
+  // to a stock photo if nothing was ever stored for this screening (e.g. a
+  // pre-existing record from before originals were persisted).
+  const originalRaw = caseData?.imageUrl || caseData?.explainability?.original_image_url || caseData?.original_image_url;
+  const gradcamRaw = caseData?.explainability?.gradcam_image_url || caseData?.gradcam_image_url;
+  const annotatedRaw = caseData?.explainability?.annotated_image_url || caseData?.annotated_image_url;
   const images = {
-    original: caseData?.imageUrl || caseData?.explainability?.original_image_url || 'https://images.unsplash.com/photo-1578496479531-32e296d5c6e1?auto=format&fit=crop&q=80&w=800&h=500',
-    gradcam: caseData?.explainability?.gradcam_image_url ? withAuthToken(`${API_BASE_URL}${caseData.explainability.gradcam_image_url}`) : 'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80&w=800&h=500',
-    annotated: caseData?.explainability?.annotated_image_url ? withAuthToken(`${API_BASE_URL}${caseData.explainability.annotated_image_url}`) : 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&q=80&w=800&h=500'
+    original: originalRaw ? resolveMediaUrl(originalRaw) : 'https://images.unsplash.com/photo-1578496479531-32e296d5c6e1?auto=format&fit=crop&q=80&w=800&h=500',
+    gradcam: gradcamRaw ? resolveMediaUrl(gradcamRaw) : 'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80&w=800&h=500',
+    annotated: annotatedRaw ? resolveMediaUrl(annotatedRaw) : 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&q=80&w=800&h=500'
   };
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 2.5));
@@ -251,7 +260,7 @@ export default function CaseDetail({ caseData, onBack, onUpdateCase, selectedLan
           <span className="strip-label">Patient Demographics</span>
           <strong className="strip-val">
             {caseData.patient_name || caseData.patientName ? `${caseData.patient_name || caseData.patientName} • ` : ''}
-            {caseData.age || '56'} yrs • {caseData.gender || caseData.sex === 'M' ? 'Male' : 'Female'}
+            {caseData.age || '56'} yrs • {caseData.sex === 'F' || caseData.gender === 'Female' ? 'Female' : caseData.sex === 'M' || caseData.gender === 'Male' ? 'Male' : (caseData.gender || 'Female')}
           </strong>
         </div>
         <div className="strip-divider"></div>

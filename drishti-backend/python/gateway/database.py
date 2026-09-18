@@ -180,6 +180,27 @@ class Screening(Base):
     client_local_id = Column(String, nullable=True)  # the app's own offline queue ID, echoed back on sync
     captured_at = Column(DateTime, nullable=True)     # when the photo was actually taken, vs. created_at (when it reached the server)
 
+    # Point-of-care vitals -- captured by the ASHA worker (or added/corrected
+    # by the reviewing doctor) alongside the fundus photo. These used to be
+    # hardcoded placeholder strings ('8.4%', '135/85 mmHg') baked into the
+    # frontend, shown identically for every single patient regardless of
+    # what was actually true for them. Stored per-screening (not on Patient)
+    # because HbA1c/BP are exactly the kind of thing that legitimately
+    # changes between visits -- that's the whole point of tracking them.
+    hba1c_pct = Column(Float, nullable=True)
+    bp_systolic = Column(Integer, nullable=True)
+    bp_diastolic = Column(Integer, nullable=True)
+
+    # The original fundus photo as actually captured, persisted to
+    # settings.originals_dir as f"{screening.id}{original_image_ext}".
+    # Previously the uploaded file was written to a tmp path purely so the
+    # MATLAB pipeline could read it, then deleted in the same request --
+    # nothing ever kept it around, so "Original Fundus" in the review
+    # studio had nothing real to display and silently fell back to a stock
+    # photo. NULL here means "no original was stored for this screening"
+    # (e.g. a pre-existing row from before this column existed).
+    original_image_ext = Column(String, nullable=True)
+
     created_at = Column(DateTime, default=dt.datetime.utcnow)
 
     patient = relationship("Patient", back_populates="screenings")

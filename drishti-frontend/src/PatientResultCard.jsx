@@ -61,7 +61,7 @@ export default function PatientResultCard({
   const phc = getPHC(caseData);
   const date = caseData.date || caseData.screening_date || '2026-09-02';
   const age = caseData.age || caseData.patient_age || 50;
-  const gender = caseData.gender || caseData.patient_gender || 'Unknown';
+  const gender = caseData.sex === 'F' ? 'Female' : caseData.sex === 'M' ? 'Male' : (caseData.gender || caseData.patient_gender || 'Unknown');
 
   const localizedSummary = getLocalizedSummary(caseData, currentLang);
   const currentLangObj = SUPPORTED_LANGUAGES.find(l => l.code === currentLang) || SUPPORTED_LANGUAGES[0];
