@@ -13,6 +13,7 @@ import NotificationDrawer from './NotificationDrawer';
 import ReportModal from './ReportModal';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
+import DrishtiLogo from './Logo';
 import { ShieldCheck, ArrowRight, UserPlus, Sparkles } from 'lucide-react';
 import {
   API_BASE_URL, authFetch, apiLogout, apiFetchCurrentUser,
@@ -217,7 +218,7 @@ export default function App() {
   if (!authChecked) {
     return (
       <div className="auth-loading-screen">
-        <img src="/logo-mark.svg" alt="" className="auth-loading-mark" />
+        <DrishtiLogo className="auth-loading-mark" />
       </div>
     );
   }
@@ -235,7 +236,7 @@ export default function App() {
               the gate screen reads as a real product, not a generic
               "sign in" box with the app name typed above it. */}
           <div className="auth-brand-panel">
-            <img src="/logo-mark.svg" alt="Drishti" className="auth-brand-mark" />
+            <DrishtiLogo className="auth-brand-mark" />
             <h1 className="auth-brand-name">Drishti</h1>
             <p className="auth-brand-tagline">Clearer Care Today<br/>Brighter Tomorrows</p>
             <span className="auth-brand-kicker">AI FOR A HEALTHIER TOMORROW</span>

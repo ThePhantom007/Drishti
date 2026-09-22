@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 import { ROLE_PROFILES, apiLogin } from './api';
+import DrishtiLogo from './Logo';
 
 const ROLE_ICONS = {
   doctor: Stethoscope,
@@ -92,7 +93,7 @@ export default function LoginModal({ isOpen, onClose, onLogin, onSwitchToRegiste
         {/* Modal Header */}
         <div className="login-modal-header">
           <div className="login-brand-group">
-            <img src="/logo-mark.svg" alt="Drishti" className="brand-logo-icon-sm" />
+            <DrishtiLogo className="brand-logo-icon-sm" />
             <div>
               <h2>Drishti Tele-Ophthalmology Portal</h2>
               <span className="login-sub-heading">AI for a Healthier Tomorrow • National Health Mission</span>

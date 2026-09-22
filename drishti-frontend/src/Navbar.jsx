@@ -11,6 +11,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { SUPPORTED_LANGUAGES, ROLE_PROFILES } from './api';
+import DrishtiLogo from './Logo';
 
 const ROLE_TITLES = {
   doctor: 'Ophthalmologist Reviewer',
@@ -53,7 +54,7 @@ export default function Navbar({
       <div className="nav-brand-section">
         <div className="brand-logo-container">
           <div className="brand-icon-wrapper">
-            <img src="/logo-mark.svg" alt="Drishti" className="brand-icon" />
+            <DrishtiLogo className="brand-icon" />
             <span className="brand-pulse-dot"></span>
           </div>
           <div className="brand-text-wrapper">

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 import { ROLE_PROFILES, apiRegister } from './api';
+import DrishtiLogo from './Logo';
 
 const ROLE_ICONS = {
   doctor: Stethoscope,
@@ -84,7 +85,7 @@ export default function RegisterModal({ isOpen, onClose, onRegistered, onSwitchT
       <div className="login-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="login-modal-header">
           <div className="login-brand-group">
-            <img src="/logo-mark.svg" alt="Drishti" className="brand-logo-icon-sm" />
+            <DrishtiLogo className="brand-logo-icon-sm" />
             <div>
               <h2>Create a Drishti Account</h2>
               <span className="login-sub-heading">Registered accounts are real -- password hashed server-side, no shortcuts</span>
