@@ -1,0 +1,43 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Base tone so the "cooler" edges of the heatmap have something to fade into -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#1A1F3D5C" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+
+    <!-- Simulated Grad-CAM hotspots: warm centers fading to transparent -->
+    <item android:width="150dp" android:height="150dp" android:gravity="center">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="75dp"
+                android:startColor="#B3FF5252"
+                android:centerColor="#80FF9800"
+                android:endColor="#00FFEB3B" />
+        </shape>
+    </item>
+
+    <item android:width="96dp" android:height="96dp" android:gravity="top|end" android:top="24dp" android:right="18dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="48dp"
+                android:startColor="#99FF7043"
+                android:centerColor="#66FFCA28"
+                android:endColor="#00FFEB3B" />
+        </shape>
+    </item>
+
+    <item android:width="70dp" android:height="70dp" android:gravity="bottom|start" android:bottom="30dp" android:left="26dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="35dp"
+                android:startColor="#80FFC107"
+                android:centerColor="#4DFFEB3B"
+                android:endColor="#00FFEB3B" />
+        </shape>
+    </item>
+</layer-list>
