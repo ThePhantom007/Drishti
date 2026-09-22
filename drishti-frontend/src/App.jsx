@@ -13,7 +13,7 @@ import NotificationDrawer from './NotificationDrawer';
 import ReportModal from './ReportModal';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
-import { Eye, ShieldCheck } from 'lucide-react';
+import { ShieldCheck, ArrowRight, UserPlus, Sparkles } from 'lucide-react';
 import {
   API_BASE_URL, authFetch, apiLogout, apiFetchCurrentUser,
   setOnUnauthorized, getAuthToken, ROLE_ALLOWED_VIEWS, getDefaultViewForRole,
@@ -217,7 +217,7 @@ export default function App() {
   if (!authChecked) {
     return (
       <div className="auth-loading-screen">
-        <Eye size={28} className="text-primary" />
+        <img src="/logo-mark.svg" alt="" className="auth-loading-mark" />
       </div>
     );
   }
@@ -225,21 +225,45 @@ export default function App() {
   if (!currentUser) {
     return (
       <div className="auth-gate-screen">
-        <div className="auth-gate-card">
-          <div className="brand-logo-icon-sm" style={{ width: 56, height: 56, margin: '0 auto 1rem' }}>
-            <Eye size={28} className="text-primary" />
+        <div className="auth-gate-backdrop" aria-hidden="true">
+          <span className="auth-blob auth-blob-teal"></span>
+          <span className="auth-blob auth-blob-navy"></span>
+        </div>
+
+        <div className="auth-gate-layout">
+          {/* Brand panel -- carries the actual Drishti identity/tagline so
+              the gate screen reads as a real product, not a generic
+              "sign in" box with the app name typed above it. */}
+          <div className="auth-brand-panel">
+            <img src="/logo-mark.svg" alt="Drishti" className="auth-brand-mark" />
+            <h1 className="auth-brand-name">Drishti</h1>
+            <p className="auth-brand-tagline">Clearer Care Today<br/>Brighter Tomorrows</p>
+            <span className="auth-brand-kicker">AI FOR A HEALTHIER TOMORROW</span>
+
+            <ul className="auth-brand-highlights">
+              <li><Sparkles size={14} /> Explainable AI diabetic retinopathy grading</li>
+              <li><ShieldCheck size={14} /> Built for last-mile rural tele-screening</li>
+            </ul>
           </div>
-          <h1>DRISHTI Tele-Ophthalmology Portal</h1>
-          <p className="dashboard-subtitle">Explainable AI Diabetic Retinopathy Screening for Rural India</p>
-          <button className="btn-primary" style={{ marginTop: '1.5rem', width: '100%' }} onClick={() => setIsLoginOpen(true)}>
-            Sign In
-          </button>
-          <button className="btn-ghost" style={{ marginTop: '0.6rem', width: '100%' }} onClick={() => setIsRegisterOpen(true)}>
-            Create an Account
-          </button>
-          <div className="security-notice" style={{ justifyContent: 'center', marginTop: '1.25rem' }}>
-            <ShieldCheck size={14} className="text-emerald" />
-            <span>Role-Based Access Control Enforced</span>
+
+          <div className="auth-gate-card">
+            <span className="auth-gate-eyebrow">DRISHTI TELE-OPHTHALMOLOGY PORTAL</span>
+            <h2 className="auth-gate-heading">Welcome back</h2>
+            <p className="dashboard-subtitle">Explainable AI diabetic retinopathy screening for rural India</p>
+
+            <button className="btn-auth-primary" onClick={() => setIsLoginOpen(true)}>
+              <span>Sign In</span>
+              <ArrowRight size={16} />
+            </button>
+            <button className="btn-auth-secondary" onClick={() => setIsRegisterOpen(true)}>
+              <UserPlus size={16} />
+              <span>Create an Account</span>
+            </button>
+
+            <div className="security-notice" style={{ justifyContent: 'center', marginTop: '1.5rem' }}>
+              <ShieldCheck size={14} className="text-emerald" />
+              <span>Role-Based Access Control Enforced</span>
+            </div>
           </div>
         </div>
 

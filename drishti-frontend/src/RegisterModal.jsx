@@ -7,7 +7,6 @@ import {
   HeartHandshake, 
   X, 
   CheckCircle2, 
-  Eye, 
   AlertTriangle,
   Building2,
   MapPin,
@@ -85,11 +84,9 @@ export default function RegisterModal({ isOpen, onClose, onRegistered, onSwitchT
       <div className="login-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="login-modal-header">
           <div className="login-brand-group">
-            <div className="brand-logo-icon-sm">
-              <Eye size={20} className="text-primary" />
-            </div>
+            <img src="/logo-mark.svg" alt="Drishti" className="brand-logo-icon-sm" />
             <div>
-              <h2>Create a DRISHTI Account</h2>
+              <h2>Create a Drishti Account</h2>
               <span className="login-sub-heading">Registered accounts are real -- password hashed server-side, no shortcuts</span>
             </div>
           </div>

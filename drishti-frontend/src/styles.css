@@ -236,13 +236,16 @@ textarea:focus {
   position: relative;
   width: 38px;
   height: 38px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--azure) 100%);
-  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  box-shadow: 0 4px 10px rgba(30, 64, 175, 0.25);
+}
+
+.brand-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(18, 58, 99, 0.25));
 }
 
 .brand-pulse-dot {
@@ -4100,11 +4103,9 @@ button {
 .brand-logo-icon-sm {
   width: 36px;
   height: 36px;
-  background: white;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .login-modal-header h2 {
@@ -4379,34 +4380,238 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-canvas);
+  background: linear-gradient(135deg, #eafffb 0%, #eef6ff 55%, #f8fafc 100%);
+}
+
+.auth-loading-mark {
+  width: 56px;
+  height: 56px;
+  animation: auth-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes auth-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.75; }
 }
 
 .auth-gate-screen {
-  height: 100vh;
+  position: relative;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 2rem 1.5rem;
+  overflow: hidden;
+  background: linear-gradient(135deg, #eafffb 0%, #eef6ff 55%, #f8fafc 100%);
 }
 
+/* Soft, oversized blurred color fields behind the card -- purely
+   decorative, gives the screen depth instead of a flat single color. */
+.auth-gate-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.35;
+}
+
+.auth-blob-teal {
+  width: 480px;
+  height: 480px;
+  top: -160px;
+  left: -140px;
+  background: radial-gradient(circle, #14b8a6 0%, transparent 70%);
+}
+
+.auth-blob-navy {
+  width: 560px;
+  height: 560px;
+  bottom: -220px;
+  right: -180px;
+  background: radial-gradient(circle, #123a63 0%, transparent 70%);
+}
+
+.auth-gate-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  width: 100%;
+  max-width: 860px;
+  min-height: 480px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px -20px rgba(18, 58, 99, 0.35), 0 8px 24px rgba(18, 58, 99, 0.12);
+}
+
+/* Left: brand identity panel -- the same gradient as the logo mark itself,
+   so the whole panel reads as one continuous piece of branding rather
+   than a logo dropped onto an unrelated background. */
+.auth-brand-panel {
+  background: linear-gradient(155deg, #14b8a6 0%, #0e8fb0 45%, #123a63 100%);
+  color: #ffffff;
+  padding: 3rem 2.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-brand-panel::before {
+  content: '';
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  top: -90px;
+  right: -90px;
+}
+
+.auth-brand-mark {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.2));
+  margin-bottom: 1.25rem;
+}
+
+.auth-brand-name {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.6rem;
+}
+
+.auth-brand-tagline {
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.94);
+  margin-bottom: 0.9rem;
+}
+
+.auth-brand-kicker {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.75);
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  padding-top: 0.75rem;
+  margin-bottom: 1.75rem;
+  width: fit-content;
+}
+
+.auth-brand-highlights {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-brand-highlights li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* Right: the actual sign-in/create-account card */
 .auth-gate-card {
   background: var(--glass-bg-strong);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow-hover);
-  padding: 2.5rem 2.25rem;
+  padding: 3rem 2.5rem;
   width: 100%;
-  max-width: 380px;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
 }
 
-.auth-gate-card h1 {
-  font-size: 1.3rem;
-  margin: 0 0 0.4rem;
+.auth-gate-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--azure);
+  margin-bottom: 0.5rem;
+}
+
+.auth-gate-heading {
+  font-size: 1.6rem;
+  font-weight: 800;
   color: var(--text-dark);
+  margin: 0 0 0.4rem;
+}
+
+.auth-gate-card .dashboard-subtitle {
+  margin-bottom: 1.75rem;
+}
+
+.btn-auth-primary,
+.btn-auth-secondary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn-auth-primary {
+  background: linear-gradient(135deg, #14b8a6 0%, #123a63 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 10px 24px -6px rgba(18, 58, 99, 0.45);
+}
+
+.btn-auth-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px -6px rgba(18, 58, 99, 0.55);
+}
+
+.btn-auth-secondary {
+  background: var(--bg-surface);
+  color: var(--text-dark);
+  border: 1px solid var(--border);
+  margin-top: 0.75rem;
+}
+
+.btn-auth-secondary:hover {
+  background: #eafffb;
+  border-color: #99e6d8;
+}
+
+@media (max-width: 760px) {
+  .auth-gate-layout {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+  .auth-brand-panel {
+    padding: 2.25rem 2rem 1.75rem;
+  }
+  .auth-brand-highlights {
+    display: none;
+  }
+  .auth-gate-card {
+    padding: 2.25rem 2rem 2.5rem;
+  }
 }
 
 .btn-dropdown-auth {

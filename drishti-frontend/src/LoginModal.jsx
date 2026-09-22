@@ -10,7 +10,6 @@ import {
   ArrowRight, 
   Sparkles,
   KeyRound,
-  Eye,
   AlertTriangle,
   UserPlus
 } from 'lucide-react';
@@ -93,12 +92,10 @@ export default function LoginModal({ isOpen, onClose, onLogin, onSwitchToRegiste
         {/* Modal Header */}
         <div className="login-modal-header">
           <div className="login-brand-group">
-            <div className="brand-logo-icon-sm">
-              <Eye size={20} className="text-primary" />
-            </div>
+            <img src="/logo-mark.svg" alt="Drishti" className="brand-logo-icon-sm" />
             <div>
-              <h2>DRISHTI Tele-Ophthalmology Portal</h2>
-              <span className="login-sub-heading">National Health Mission • AI Tele-Screening Access</span>
+              <h2>Drishti Tele-Ophthalmology Portal</h2>
+              <span className="login-sub-heading">AI for a Healthier Tomorrow • National Health Mission</span>
             </div>
           </div>
           {dismissable && (

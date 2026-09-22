@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Eye, 
   Search, 
   Bell, 
   UploadCloud, 
@@ -54,7 +53,7 @@ export default function Navbar({
       <div className="nav-brand-section">
         <div className="brand-logo-container">
           <div className="brand-icon-wrapper">
-            <Eye className="brand-icon" size={24} />
+            <img src="/logo-mark.svg" alt="Drishti" className="brand-icon" />
             <span className="brand-pulse-dot"></span>
           </div>
           <div className="brand-text-wrapper">
@@ -67,7 +66,7 @@ export default function Navbar({
                 MathWorks
               </span>
             </div>
-            <span className="brand-subtitle">Explainable AI Diabetic Retinopathy Screening • Rural India</span>
+            <span className="brand-subtitle">Clearer Care Today, Brighter Tomorrows • Rural India</span>
           </div>
         </div>
       </div>
