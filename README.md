@@ -1,142 +1,184 @@
-# DRISHTI — Explainable AI Diabetic Retinopathy Screening for Rural India
+<div align="center">
 
-This repository is the working implementation for Smart India Hackathon
-2026, Problem Statement SIH26038.
+# DRISHTI
+### Explainable AI Diabetic Retinopathy Screening for Rural India
 
-**Live deployment:** https://drishti-frontend-c9mj.onrender.com/
+**Smart India Hackathon 2026 · Problem Statement SIH26038 · Team Veyronix**
 
-## 1. Project Information
+[![Live Demo](https://img.shields.io/badge/demo-live-2ea44f)](https://drishti-frontend-c9mj.onrender.com/)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
+![Category](https://img.shields.io/badge/category-Software-informational)
+![Theme](https://img.shields.io/badge/theme-MedTech%20%2F%20BioTech%20%2F%20HealthTech-red)
 
-- **Project Title:** DRISHTI — Explainable AI Diabetic Retinopathy Screening for Rural India
-- **PS ID:** SIH26038
-- **PS Title:** Explainable AI for Diabetic Retinopathy Screening in Rural India
-- **Category:** Software
-- **Theme:** MedTech / BioTech / HealthTech
+[Live App](https://drishti-frontend-c9mj.onrender.com/) ·
+[Presentation](submission/Veyronix_SIH26038_DRISHTI_PPT.pdf) ·
+[Demo Video](https://drive.google.com/file/d/1fnFgtoWxl9rME_tax4MdIlPC4LXKwcv0/view?usp=sharing) ·
+[Architecture](docs/architecture.md)
 
-## 2. Problem Statement
+</div>
 
-Diabetic retinopathy (DR) is a leading preventable cause of blindness in
-India — an estimated 101M people live with diabetes nationally, of whom
-roughly 12.5% develop DR, and about 4% (~4M people) have vision-threatening
-DR. The bottleneck isn't disease incidence; it's screening capacity: too
-few ophthalmologists relative to the population that needs annual fundus
-screening, concentrated in urban centers far from the rural PHCs where
-most at-risk patients actually live.
+---
 
-## 3. Proposed Solution
+A single ophthalmologist can safely oversee diabetic retinopathy screening
+for **100,000+ patients a year** — not by working faster, but because
+DRISHTI's dual-path AI pipeline clears the confident cases automatically,
+explains every grade with lesion-level visual evidence, and routes only
+the genuinely uncertain or referable cases to a human. An ASHA worker
+captures a fundus photo at a rural PHC — from a native Android app or the
+web portal — and gets a graded, explained result back in seconds; the
+ophthalmologist reviewer sees only what needs their judgment.
 
-DRISHTI is a MATLAB + Python hybrid remote screening pipeline: an ASHA
-worker captures a fundus photo at a rural PHC, the pipeline grades DR
-severity end-to-end (image quality gating → adaptive enhancement → lesion
-segmentation → dual-path ICDR severity grading → Grad-CAM explainability),
-and low-confidence or referable cases are routed to an ophthalmologist for
-tele-review — so a single reviewer can safely oversee screening at a scale
-no manual-only process could sustain. Grading is **dual-path by design**:
-an interpretable rule-based ICDR ("4-2-1") estimate runs alongside the
-trained deep-learning ensemble, and a disagreement between the two is a 
-visible review signal.
+## The Problem
 
-## 4. Key Features
+India has an estimated **101 million people living with diabetes**
+(ICMR-INDIAB, 2023). Roughly **12.5% develop diabetic retinopathy** —
+about 12.6 million people — and **4.0%** (~4 million) have
+vision-threatening DR (SMART-India study, *Lancet Global Health*, 2022).
+DR is a leading *preventable* cause of blindness, and the failure point
+isn't disease incidence — it's screening capacity. Ophthalmologists
+capable of grading a fundus photo are concentrated in urban centers, far
+from the rural PHCs where most at-risk patients actually live and where
+annual screening would need to happen.
 
-- Fundus image quality gating with actionable recapture feedback
-- Dual-path ICDR severity grading (rule-based **and** trained model,
-  cross-checked — disagreement is a review signal, not hidden)
-- Grad-CAM visual explainability + calibrated-confidence human review gating
-- Prioritized ophthalmologist review queue with confirm/override, and a
-  full audit trail of who reviewed what
-- Longitudinal patient history and repeat-screening trajectory tracking
-- Role-based accounts for all three real user types — ASHA field worker,
-  ophthalmologist, and program administrator — each restricted to their
-  own tabs and data, enforced on both the frontend and the backend API
-- District-level program analytics and a Simulink-based capacity model for
-  planning district-scale rollout
-- Native-language voice read-out of results and PDF reports for
-  ASHA-led rural patient communication
-- Validated against Messidor-2, a fully external benchmark never trained
-  or tuned on — see the in-app Benchmarks page for the actual numbers
+## The Solution
 
-## 5. Technology Stack
+DRISHTI is a MATLAB + Python hybrid remote screening pipeline built around
+one idea: **AI should triage, not diagnose alone.**
 
-- **Frontend:** React, Vite
-- **Backend:** Python, FastAPI
-- **Machine Learning:** MATLAB (Image Processing / Computer Vision / Deep
-  Learning Toolboxes, Simulink), PyTorch + timm (EfficientNet-B3, exported
-  to ONNX and imported into MATLAB for inference and Grad-CAM)
-- **Database:** PostgreSQL
-- **Deployment:** Render (both backend and frontend), Neon (PostgreSQL),
-  UptimeRobot (keeps the free backend from sleeping) —
-  see `docs/DEPLOYMENT.md`
+A fundus photo goes through six stages — image quality gating → adaptive
+enhancement → lesion segmentation → dual-path ICDR severity grading →
+Grad-CAM explainability → report and voice generation — and comes out the
+other end as either an automatically cleared result or a case flagged for
+tele-review, never a silent AI-only diagnosis on a borderline finding.
 
-## 6. Architecture
+Grading is **dual-path by design**: an interpretable, rule-based ICDR
+("4-2-1") estimate runs alongside a trained deep-learning ensemble, and
+when the two disagree, that disagreement is surfaced as a visible review
+signal rather than quietly resolved in the background.
 
-See [docs/architecture.md](docs/architecture.md).
+## Key Features
+
+- **Quality gating with actionable feedback** — blurry, dark, or
+  off-target captures are rejected at the point of capture with a
+  specific reason, not silently mis-graded
+- **Dual-path ICDR grading** — rule-based and trained-model estimates
+  cross-check each other; disagreement is a review signal, not hidden
+- **Grad-CAM explainability + calibrated confidence** — every grade ships
+  with the visual evidence behind it, and low-confidence cases are gated
+  into mandatory human review rather than returned as-is
+- **Prioritized ophthalmologist review queue** — severity- and
+  confidence-sorted, with one-click confirm/override, real-time
+  notifications on new referable cases, and a full audit trail of who
+  reviewed what
+- **Longitudinal patient history** — repeat-screening trajectory tracking
+  across visits, not just a single point-in-time result
+- **Three fully gated roles** — ASHA field worker, ophthalmologist, and
+  program administrator, each restricted to their own tabs and data,
+  enforced on both the frontend and the backend API
+- **District-level program analytics** and a Simulink-based capacity
+  model for planning district-scale rollout
+- **Voice read-out in 23 languages** — all 22 languages of the Eighth
+  Schedule to the Constitution, plus English — for ASHA-led communication
+  with patients who may not read the language of the report
+- **Native Android app** for ASHA field workers, mirroring the full
+  capture-and-screen workflow with offline-first capture/sync and push
+  notifications
+- **Validated on Messidor-2** — a fully external benchmark never trained
+  or tuned on — with the real numbers reported in-app, including where
+  the target metric isn't yet met
+
+## Built for Three Different Users
+
+| | ASHA / Field Worker | Ophthalmologist | District Admin |
+|---|---|---|---|
+| **Surface** | Native Android app + mobile-first web portal | Web review studio | Web dashboard |
+| **Does** | Guided fundus capture, one-handed patient registration, offline queue with sync-on-connect | Reviews a severity/confidence-sorted queue, confirms or overrides AI grades against Grad-CAM evidence | Monitors district KPIs and plans reviewer/bandwidth capacity |
+| **Gets** | Native-language diagnosis + care audio, push notifications | Full patient history, one-click audit trail | Trend charts, Simulink-recommended staffing vs. actual load |
+
+## How It Works
 
 ```text
-ASHA Worker / Doctor / Admin
-  |
-  v
-Frontend (React + Vite)
-  |
-  v
-Backend API (FastAPI)
-  |
-  +----> PostgreSQL
-  |
-  v
-MATLAB + Python ML Pipeline
-  |
-  v
-Screening Result (grade, referral, heatmap, report, audio)
+ASHA Worker (Android app / web)         Doctor / Admin (web)
+              |                                  |
+              v                                  v
+                   Backend API (FastAPI)
+                            |
+                            +----> PostgreSQL
+                            |
+                            v
+                MATLAB + Python ML Pipeline
+                            |
+                            v
+      Screening result: grade · referral · heatmap · report · audio
 ```
 
-## 7. Repository Structure
+Full technical breakdown: [docs/architecture.md](docs/architecture.md).
 
-```text
-DRISHTI/
-├── README.md
-├── SUBMISSION_GUIDE.md
-├── submission/
-│   ├── PRESENTATION.md
-│   └── DEMO.md
-├── drishti-frontend/           # React + Vite web app (source code)
-├── drishti-backend/            # FastAPI gateway + MATLAB/Python ML pipeline (source code)
-│   ├── python/gateway/         # REST API, auth, database models
-│   ├── matlab/                 # 6-stage screening pipeline
-│   ├── scripts/                # demo data seeding
-│   └── docs/api_contract.md    # full REST API reference
-├── docs/
-│   ├── architecture.md
-│   ├── DEPLOYMENT.md           # free-tier live deployment guide
-│   └── DEVELOPMENT_LOG.md      # detailed build/debugging history
-├── assets/
-│   └── screenshots/
-├── render.yaml                 # backend deployment blueprint
-├── requirements.txt
-├── .gitignore
-└── LICENSE
-```
+## Validation
 
-### What goes where?
+The classical computer-vision pipeline (quality gating, enhancement,
+lesion segmentation, rule-based ICDR) runs end-to-end with no trained
+model required. The trained severity classifier is evaluated on
+Messidor-2 — a benchmark completely untouched during training.
 
-| Item | Location |
+**Getting from a baseline model to a deployable one** (referable-DR
+sensitivity on Messidor-2, target ≥ 0.90):
+
+| Iteration | Referable-DR sensitivity |
 |---|---|
-| Frontend source code | `drishti-frontend/` |
-| Backend + ML source code | `drishti-backend/` |
-| Architecture / technical documentation | `docs/` |
-| Project screenshots | `assets/screenshots/` |
-| Final PPT / presentation | `submission/` |
-| Demo video link | `submission/DEMO.md` |
-| Project overview | `README.md` (this file) |
+| Baseline model | 0.50 |
+| + Ben Graham color normalisation, + IDRiD data | 0.62 |
+| + Weighted ensemble (final) | **0.74** |
 
-## 8. Final Presentation
+**Final deployed model** — a weighted ensemble of three independently
+seeded checkpoints (I07 · 0.376, K10 · 0.086, K11 · 0.538):
 
-[Veyronix_SIH26038_DRISHTI_PPT.pdf](submission/Veyronix_SIH26038_DRISHTI_PPT.pdf)
+| Metric | Value |
+|---|---|
+| Sensitivity / Specificity | 0.7352 / 0.8508 |
+| Quadratic Weighted Kappa | 0.5509 |
+| Effective sensitivity (AI + mandatory human review) | **0.8928** — near target |
+| Review rate at 100,000 patients/year | 43.6% → ~73% reviewer utilization |
 
-## 9. Demo Video
+**Risks we tested for, and how they're addressed:**
 
-(https://drive.google.com/file/d/1fnFgtoWxl9rME_tax4MdIlPC4LXKwcv0/view?usp=sharing)
+| Risk | Why it matters | Mitigation |
+|---|---|---|
+| Cross-camera domain shift | Confirmed via external Messidor-2 testing | Ben Graham color normalisation + multi-source (APTOS + IDRiD) training |
+| Rare-class (severe/PDR) data scarcity | Causes unstable, biased predictions | Class-weighted sampling + ordinal-aware loss + seed/checkpoint selection |
+| Silent misdiagnosis | Any AI-alone system can be confidently wrong | Calibrated confidence gates mandatory human review — never a silent miss |
+| District rollout planning | Unknown staffing/bandwidth needs | Simulink capacity model sizes reviewers & bandwidth for target volume |
+| Field-worker adoption & digital literacy | ASHA workers need a genuinely one-handed tool | Android app + web portal with native-language read-outs |
 
-## 10. Screenshots / Prototype Photos
+## Impact
+
+- **Social** — early detection of preventable blindness for the
+  populations with the least specialist access; native-language voice
+  read-out removes the literacy/language barrier for ASHA-led delivery;
+  turns ASHA workers and rural PHCs into real screening points.
+- **Economic** — frees scarce ophthalmologist time for genuinely
+  referable cases only, via automatic triage; avoids the costlier
+  late-stage treatment and lost productivity that comes from preventable
+  blindness; the Simulink capacity model lets a district right-size
+  staffing and bandwidth investment instead of guessing.
+- **Environmental** — fewer screening-only trips to distant clinics;
+  reduces load on already overstretched public hospital infrastructure;
+  deployable on existing smartphones and low-cost fundus-lens hardware,
+  with no new infrastructure required.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| ASHA Android app | Kotlin, offline-first capture & sync, native-language voice |
+| Web frontend | React, Vite |
+| Backend | Python, FastAPI |
+| Machine learning | PyTorch + timm (EfficientNet-B3) trained and exported to ONNX, imported into MATLAB for inference and Grad-CAM |
+| Classical pipeline & modeling | MATLAB (Image Processing, Computer Vision, Deep Learning Toolboxes), Simulink |
+| Database | PostgreSQL |
+| Deployment | Render (backend + web frontend), Neon (PostgreSQL), UptimeRobot |
+
+## Screenshots
 
 ![login.png](assets/screenshots/login.png)
 ![screening-portal.png](assets/screenshots/screening-portal.png)
@@ -147,66 +189,82 @@ DRISHTI/
 ![capacity-planner.png](assets/screenshots/capacity-planner.png)
 ![benchmarks.png](assets/screenshots/benchmarks.png)
 
-## 11. Installation
+## Getting Started
 
-Two services, installed independently.
+Three components, each installed independently.
 
-**Backend** (`drishti-backend/python/gateway/`):
+**Backend**
 ```bash
 git clone <YOUR_REPOSITORY_URL>
 cd DRISHTI/drishti-backend/python/gateway
-pip install -r ../requirements-gateway.txt
+pip install -r ../requirements-gateway.txt   # or requirements-deploy.txt to skip the MATLAB dependency
 ```
-`requirements-gateway.txt` includes `matlabengine`, which requires an
-actual MATLAB installation matching its pinned version (see the comment
-at the top of that file). To install without MATLAB (e.g. for the
-deployed/demo configuration, or if you just want to run the backend in
-its built-in mock-inference mode locally), use
-`drishti-backend/requirements-deploy.txt` instead — it's the same
-dependency set minus `matlabengine`, plus the PostgreSQL driver.
-
-**Frontend** (`drishti-frontend/`):
-```bash
-cd DRISHTI/drishti-frontend
-npm install
-```
-
-## 12. Run
-
-**Backend** — set `DATABASE_URL` to your PostgreSQL connection string
-first (see `docs/DEPLOYMENT.md` for a free Neon instance, or point at a
-local PostgreSQL server), then, from `drishti-backend/python/gateway/`:
+Set `DATABASE_URL` to a PostgreSQL connection string (see
+`docs/DEPLOYMENT.md` for a free Neon instance), then:
 ```bash
 uvicorn main:app --reload
 ```
-Seed three demo accounts (one per role) and demo patients so the app
-isn't empty on first run — from `drishti-backend/`:
+Seed three demo accounts and demo patients, from `drishti-backend/`:
 ```bash
 python scripts/seed_demo_patients.py
 ```
 Sign in with `dr_sharma` / `admin_deshmukh` / `asha_worker_17`, password
 `Demo@123` for all three.
 
-**Frontend** — from `drishti-frontend/`:
+**Web frontend**
 ```bash
+cd DRISHTI/drishti-frontend
+npm install
 npm run dev
 ```
-Set `VITE_API_BASE_URL` in `drishti-frontend/.env` if the backend isn't
-running on `http://localhost:8000`.
+Set `VITE_API_BASE_URL` in `.env` if the backend isn't on
+`http://localhost:8000`.
 
-**Live deployment:** https://drishti-frontend-c9mj.onrender.com/
-— see `docs/DEPLOYMENT.md` for the full free-tier deployment walkthrough
-(Neon + Render + UptimeRobot).
+## Repository Structure
 
-## 13. Future Scope
+```text
+DRISHTI/
+├── android/                # Native Android app for ASHA field workers
+├── assets/screenshots/
+├── docs/                   # architecture, deployment
+├── drishti-backend/        # FastAPI gateway + MATLAB/Python ML pipeline
+│   ├── python/gateway/     # REST API, auth, database models
+│   ├── matlab/             # 6-stage screening pipeline
+├── drishti-frontend/       # React + Vite web app
+├── submission/             # presentation
+├── render.yaml
+├── requirements.txt
+└── LICENSE
+```
+
+## Research and References
+
+| Category | Detail | Source |
+|---|---|---|
+| Dataset | APTOS 2019 Blindness Detection | Kaggle — primary training set (~3,662 graded fundus images) |
+| Dataset | IDRiD (Indian Diabetic Retinopathy Image Dataset) | idrid.grand-challenge.org — segmentation masks + grading, Indian population |
+| Dataset | Messidor-2 + adjudicated grades | ADCIS (images) + Kaggle google-brain/messidor2-dr-grades (Krause et al.) — external validation |
+| Method | ICDR Severity Scale | Wilkinson et al., *Ophthalmology*, 2003 |
+| Method | Confidence calibration | Guo et al., "On Calibration of Modern Neural Networks," ICML 2017 |
+| Method | Cross-camera color normalisation | Graham, B., Kaggle DR Detection — winning solution, 2015 |
+| Public health | 101M Indians living with diabetes | Anjana et al., ICMR-INDIAB, *Lancet Diabetes & Endocrinology*, 2023 |
+| Public health | 12.5% DR / 4.0% vision-threatening DR prevalence | SMART-India study, *Lancet Global Health*, 2022 |
+| Feasibility | Smartphone fundus imaging validation | Wintergerst et al., *Ophthalmology*, 2020 |
+
+## What's Next
 
 - Persistent object storage (e.g. Cloudflare R2) for generated report
-  files, so they survive a redeploy on ephemeral hosting rather than only
-  patient/screening data (already durable via PostgreSQL).
+  files, so they survive a redeploy on ephemeral hosting the way
+  patient/screening data already does via PostgreSQL
 - A capacity-planning API endpoint backed by the real Simulink model
-  parameters, replacing the current simplified client-side estimate.
-- Signed/expiring URLs for report files instead of the current
-  session-token-in-query-param approach, for stronger access control on
-  shared links.
-- Native Android app for fully offline ASHA-side capture, syncing via the
-  existing `/api/sync` batch endpoint.
+  parameters, replacing the current simplified client-side estimate
+- Signed, expiring URLs for report files, for stronger access control on
+  shared links
+
+## License
+
+APACHE 2.0 — see [LICENSE](LICENSE).
+
+---
+
+<div align="center">Team Veyronix · NSUT012 · Smart India Hackathon 2026</div>
