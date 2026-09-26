@@ -2,7 +2,7 @@ function Y = permuteInputVar(X, userDataPerm_, onnxNDims_)
 % Returns reverse-ONNX ordering numeric array
 %#codegen
 
-%   Copyright 2024 The MathWorks, Inc.  
+%   Copyright 2024-2026 The MathWorks, Inc.  
 
 XNum = severity_net_epoch_07.coder.ops.extractIfDlarray(X);
 userDataPerm = severity_net_epoch_07.coder.ops.extractIfDlarray(userDataPerm_);
@@ -25,7 +25,7 @@ elseif isequal(userDataPerm, 'auto') && onnxNDims == 4
     perm = [2 1 3 4];
 elseif isequal(userDataPerm, 'as-is')
     % Do not permute the input
-    perm = 1:ndims(XNum);
+    perm = 1:onnxNDims;
 else
     % userDataPerm is either 'none' or 'auto' with no default, which means
     % it's already in onnx ordering, so just make it reverse onnx

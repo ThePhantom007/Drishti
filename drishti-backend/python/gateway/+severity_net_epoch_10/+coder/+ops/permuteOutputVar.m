@@ -1,6 +1,6 @@
 function Y = permuteOutputVar(X, userDataPerm_, onnxNDims_)
 % Returns DLT ordering
-%   Copyright 2024 The MathWorks, Inc.
+%   Copyright 2024-2026 The MathWorks, Inc.
 %#codegen
 
 userDataPerm = severity_net_epoch_10.coder.ops.extractIfDlarray(userDataPerm_);
@@ -42,7 +42,7 @@ switch onnxNDims
             end
         elseif isequal(userDataPerm, 'as-is')
             % Do not permute the input
-            perm = 1:ndims(X);
+            perm = 1:onnxNDims;
         else
             % userDataPerm is 'none', so just make it reverse onnx
             perm = onnxNDims:-1:1;

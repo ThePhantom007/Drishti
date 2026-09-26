@@ -3,7 +3,7 @@
 # DRISHTI
 ### Explainable AI Diabetic Retinopathy Screening for Rural India
 
-**Smart India Hackathon 2026 · Problem Statement SIH26038 · Team Veyronix**
+**Smart India Hackathon 2026 · Problem Statement SIH26038 · Team Veyronix · Team ID 178208**
 
 [![Live Demo](https://img.shields.io/badge/demo-live-2ea44f)](https://drishti-frontend-c9mj.onrender.com/)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
@@ -12,7 +12,7 @@
 
 [Live App](https://drishti-frontend-c9mj.onrender.com/) ·
 [Presentation](submission/Veyronix_SIH26038_DRISHTI_PPT.pdf) ·
-[Demo Video](https://drive.google.com/file/d/1fnFgtoWxl9rME_tax4MdIlPC4LXKwcv0/view?usp=sharing) ·
+[Demo Video](https://youtu.be/VXapVarZr4U) ·
 [Architecture](docs/architecture.md)
 
 </div>
@@ -267,4 +267,4 @@ APACHE 2.0 — see [LICENSE](LICENSE).
 
 ---
 
-<div align="center">Team Veyronix · NSUT012 · Smart India Hackathon 2026</div>
+<div align="center">Team Veyronix · Team ID 178208 · Smart India Hackathon 2026</div>
